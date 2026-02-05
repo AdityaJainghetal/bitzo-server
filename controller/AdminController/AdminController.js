@@ -1,4 +1,5 @@
 const User = require("../../models/admin/AdminModel");
+const AllUser = require("../../models/usermodel");
 const generateToken = require("../../utils/generateToken");
 const bcrypt = require("bcryptjs");
 
@@ -175,6 +176,23 @@ exports.registerUser = async (req, res) => {
 //     });
 //   }
 // };
+
+
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await AllUser.find().select("-password");
+    res.status(200).json({
+      success: true,
+      data: users,
+    });
+  } catch (error) {
+    console.error("Get all users error:", error);
+    res.status(500).json({  
+      success: false,
+      message: "Server error",
+    });
+  }
+};
 exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;

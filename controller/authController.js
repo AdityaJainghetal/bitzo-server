@@ -1,3 +1,9 @@
+const User = require("../models/usermodel");
+const generateToken = require("../utils/generateToken");
+const bcrypt = require("bcryptjs"); // ← make sure this is installed
+
+const jwt = require("jsonwebtoken");
+
 exports.loginUser = async (req, res) => {
   try {
     const { email, password, deviceId } = req.body;
@@ -49,11 +55,7 @@ exports.loginUser = async (req, res) => {
   }
 };
 
-const User = require("../models/usermodel");
-const generateToken = require("../utils/generateToken");
-const bcrypt = require("bcryptjs"); // ← make sure this is installed
 
-const jwt = require("jsonwebtoken");
 
 /* ===================== REGISTER ===================== */
 exports.registerUser = async (req, res) => {
@@ -124,192 +126,10 @@ exports.registerUser = async (req, res) => {
     });
   }
 };
-// exports.loginUser = async (req, res) => {
-//   try {
-//     const { email, password, deviceId } = req.body;
 
-//     if (!email || !password || !deviceId) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "All fields are required"
-//       });
-//     }
 
-//     // 🔑 IMPORTANT FIX HERE
-//     const user = await User.findOne({ email }).select("+password");
 
-//     if (!user) {
-//       return res.status(401).json({
-//         success: false,
-//         message: "Invalid credentials"
-//       });
-//     }
 
-//     if (!user.password) {
-//       return res.status(500).json({
-//         success: false,
-//         message: "Password not found for this user"
-//       });
-//     }
-
-//     // Device lock
-//     // if (user.deviceId !== deviceId) {
-//     //   return res.status(401).json({
-//     //     success: false,
-//     //     message: "Login blocked: different device detected"
-//     //   });
-//     // }
-
-//     const isMatch = await bcrypt.compare(password, user.password);
-//     if (!isMatch) {
-//       return res.status(401).json({
-//         success: false,
-//         message: "Invalid credentials"
-//       });
-//     }
-
-//     res.status(200).json({
-//       success: true,
-//       message: "Login successful",
-//       token: generateToken(user._id),
-//       user: {
-//         id: user._id,
-//         name: user.name,
-//         email: user.email,
-//         role: user.role,
-//         trustScore: user.trustScore
-//       }
-//     });
-
-//   } catch (error) {
-//     console.error("Login error:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Login failed"
-//     });
-//   }
-// };
-
-// exports.loginUser = async (req, res) => {
-//   try {
-//     const { email, password, deviceId } = req.body;
-
-//     if (!email || !password || !deviceId) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "All fields are required"
-//       });
-//     }
-
-//     const user = await User.findOne({ email });
-//     if (!user) {
-//       return res.status(401).json({
-//         success: false,
-//         message: "Invalid credentials"
-//       });
-//     }
-
-//     // Device lock
-//     if (user.deviceId !== deviceId) {
-//       return res.status(401).json({
-//         success: false,
-//         message: "Login blocked: different device detected"
-//       });
-//     }
-
-//     // 🔐 COMPARE PASSWORD
-//     const isMatch = await bcrypt.compare(password, user.password);
-//     if (!isMatch) {
-//       return res.status(401).json({
-//         success: false,
-//         message: "Invalid credentials"
-//       });
-//     }
-
-//     res.status(200).json({
-//       success: true,
-//       message: "Login successful",
-//       token: generateToken(user._id),
-//       user: {
-//         id: user._id,
-//         name: user.name,
-//         email: user.email,
-//         role: user.role,
-//         trustScore: user.trustScore
-//       }
-//     });
-//   } catch (error) {
-//     console.error("Login error:", error);
-
-//     res.status(500).json({
-//       success: false,
-//       message: "Login failed"
-//     });
-//   }
-// };
-
-// exports.loginUser = async (req, res) => {
-//   try {
-//     const { email, password, deviceId } = req.body;
-
-//     if (!email || !password || !deviceId) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "All fields are required"
-//       });
-//     }
-
-//     const user = await User.findOne({ email }).select("+password");
-//     if (!user) {
-//       return res.status(401).json({
-//         success: false,
-//         message: "Invalid credentials"
-//       });
-//     }
-
-//     const isMatch = await bcrypt.compare(password, user.password);
-//     if (!isMatch) {
-//       return res.status(401).json({
-//         success: false,
-//         message: "Invalid credentials"
-//       });
-//     }
-
-//     const token = jwt.sign(
-//       { userId: user._id },
-//       process.env.SECRET_KEY,
-//       { expiresIn: "7d" }
-//     );
-
-//     // ✅ SET COOKIE
-//     res.cookie("token", token, {
-//       httpOnly: true,
-//       secure: false,     // true in production
-//       sameSite: "lax"
-//     });
-
-//     // ✅ SEND TOKEN ALSO IN RESPONSE
-//     res.status(200).json({
-//       success: true,
-//       message: "Login successful",
-//       token, // 👈 token bhi send ho raha hai
-//       user: {
-//         id: user._id,
-//         name: user.name,
-//         email: user.email,
-//         role: user.role,
-//         trustScore: user.trustScore
-//       }
-//     });
-
-//   } catch (error) {
-//     console.error("Login error:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Login failed"
-//     });
-//   }
-// };
 
 exports.loginUser = async (req, res) => {
   try {

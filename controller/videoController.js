@@ -1,44 +1,6 @@
 const Video = require("../models/Videomodel");
 
-exports.uploadVideo = async (req, res) => {
-  try {
-    const { title, description, type, duration } = req.body;
-
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: "Video file is required"
-      });
-    }
-
-    if (!title || !type) {
-      return res.status(400).json({
-        success: false,
-        message: "Title and type are required"
-      });
-    }
-
-    const video = await Video.create({
-      title,
-      description,
-      type,
-      duration,
-      videoUrl: req.file.path,
-      // creator: req.user._id
-    });
-
-    res.status(201).json({
-      success: true,
-      message: "Video uploaded successfully",
-      video
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
+const fs = require("fs");
 
 /**
  * ✏️ Update Video
@@ -46,9 +8,15 @@ exports.uploadVideo = async (req, res) => {
 exports.updateVideoupdated = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, type, duration } = req.body;
+    const {
+      title,
+      description,
+      type,
+      duration,
+      category,
+      subCategory,
+    } = req.body;
 
-    // 1. Find video
     const video = await Video.findById(id);
 
     if (!video) {
@@ -58,22 +26,20 @@ exports.updateVideoupdated = async (req, res) => {
       });
     }
 
-    // 2. Update fields if provided
     if (title) video.title = title;
     if (description !== undefined) video.description = description;
     if (type) video.type = type;
     if (duration) video.duration = Number(duration);
+    if (category) video.category = category;         // ✅ update category
+    if (subCategory) video.subCategory = subCategory; // ✅ update subCategory
 
-    // 3. If new video file uploaded → update URL
     if (req.file) {
       const filePath = req.file.path.replace(/\\/g, "/");
       video.videoUrl = filePath;
     }
 
-    // 4. Save updated video
     await video.save();
 
-    // 5. Generate full URL for frontend
     const baseUrl = `${req.protocol}://${req.get("host")}`;
     const fullVideoUrl = `${baseUrl}/${video.videoUrl}`;
 
@@ -85,7 +51,6 @@ exports.updateVideoupdated = async (req, res) => {
         videoUrl: fullVideoUrl,
       },
     });
-
   } catch (error) {
     console.error("Update error:", error);
     res.status(500).json({
@@ -98,9 +63,62 @@ exports.updateVideoupdated = async (req, res) => {
 
 
 
+// exports.uploadVideo = async (req, res) => {
+//   try {
+//     if (!req.file) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Video file is required",
+//       });
+//     }
+
+//     const {
+//       title,
+//       description,
+//       type,
+//       duration,
+//       category,
+//       subCategory,
+//     } = req.body;
+
+  
+
+//     const filePath = req.file.path.replace(/\\/g, "/");
+
+//     const video = await Video.create({
+//       title,
+//       description: description || "",
+//       type,
+//       duration: duration ? Number(duration) : undefined,
+//       category,            // ✅ category save
+//       subCategory,         // ✅ subCategory save
+//       videoUrl: filePath,
+//     });
+
+//     const baseUrl = `${req.protocol}://${req.get("host")}`;
+//     const fullVideoUrl = `${baseUrl}/${filePath}`;
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Video uploaded successfully",
+//       video: {
+//         ...video.toObject(),
+//         videoUrl: fullVideoUrl,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Upload error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Server error during upload",
+//       error: error.message,
+//     });
+//   }
+// };
+
+
 exports.uploadVideo = async (req, res) => {
   try {
-    // 1. Check if file was uploaded
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -108,41 +126,35 @@ exports.uploadVideo = async (req, res) => {
       });
     }
 
-    // 2. Validate required fields
-    const { title, description, type, duration } = req.body;
+    const {
+      title,
+      description,
+      type,
+      duration,
+      category,
+      // subCategory removed
+    } = req.body;
 
-    if (!title || !type) {
-      return res.status(400).json({
-        success: false,
-        message: "Title and type are required",
-      });
-    }
+    const filePath = req.file.path.replace(/\\/g, "/");
 
-    // 3. Normalize path → always use forward slashes (good for all OS)
-    const filePath = req.file.path.replace(/\\/g, '/');
-
-    // 4. Create video document → store RELATIVE PATH only (best practice)
     const video = await Video.create({
       title,
-      description: description || '',
+      description: description || "",
       type,
       duration: duration ? Number(duration) : undefined,
-      videoUrl: filePath,               // ← store only "uploads/xxx.mp4"
-      // creator: req.user?._id,        // uncomment when auth is active
-      // views: 0,                      // default in schema?
+      category,            // only category is saved now
+      videoUrl: filePath,
     });
 
-    // 5. Generate full accessible URL **only for response**
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
     const fullVideoUrl = `${baseUrl}/${filePath}`;
 
-    // 6. Send response with full URL (frontend needs this)
     res.status(201).json({
       success: true,
       message: "Video uploaded successfully",
       video: {
-        ...video.toObject(),           // convert mongoose doc to plain object
-        videoUrl: fullVideoUrl,        // ← override with full URL for frontend
+        ...video.toObject(),
+        videoUrl: fullVideoUrl,
       },
     });
   } catch (error) {
@@ -154,23 +166,228 @@ exports.uploadVideo = async (req, res) => {
     });
   }
 };
+
 /**
  * 📥 Get All Videos
  */
+// exports.getAllVideos = async (req, res) => {
+//   try {
+//     const videos = await Video.find().sort({ createdAt: -1 });
+
+//     res.status(200).json({
+//       success: true,
+//       count: videos.length,
+//       videos
+//     });
+
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: error.message
+//     });
+//   }
+// };
+
+// exports.getAllVideos = async (req, res) => {
+//   try {
+//     const videos = await Video.find()
+//       .populate("category", "name")        // ✅ category name
+//       .sort({ createdAt: -1 });
+
+//     const baseUrl = `${req.protocol}://${req.get("host")}`;
+
+//     // ✅ full video URL for frontend
+//     const updatedVideos = videos.map((video) => {
+//       const videoObj = video.toObject();
+//       return {
+//         ...videoObj,
+//         videoUrl: `${baseUrl}/${videoObj.videoUrl}`,
+//       };
+//     });
+
+//     res.status(200).json({
+//       success: true,
+//       count: updatedVideos.length,
+//       videos: updatedVideos,
+//     });
+
+//   } catch (error) {
+//     console.error("Get videos error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
+
 exports.getAllVideos = async (req, res) => {
   try {
-    const videos = await Video.find().sort({ createdAt: -1 });
+    // Fetch all videos, populate only category name, newest first
+    const videos = await Video.find()
+      .populate("category", "name")        // only category name
+      .sort({ createdAt: -1 });
+
+    // Get the base URL for the server
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+
+    // Add full video URL for frontend consumption
+    const updatedVideos = videos.map((video) => {
+      const videoObj = video.toObject();
+      return {
+        ...videoObj,
+        videoUrl: `${baseUrl}/${videoObj.videoUrl}`, // assuming videoUrl is stored as relative path
+      };
+    });
 
     res.status(200).json({
       success: true,
-      count: videos.length,
-      videos
+      count: updatedVideos.length,
+      videos: updatedVideos,
     });
 
   } catch (error) {
+    console.error("Error fetching videos:", error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: "Server error while fetching videos",
+      error: error.message, // optional: only in development
+    });
+  }
+};
+
+exports.editMyVideo = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    const {
+      title,
+      description,
+      type,
+      duration,
+      category,
+      subCategory,
+    } = req.body;
+
+    // 🔒 Find video owned by logged-in user
+    const video = await Video.findOne({
+      _id: id,
+      creator: userId,
+    });
+
+    if (!video) {
+      return res.status(404).json({
+        success: false,
+        message: "Video not found or not authorized",
+      });
+    }
+
+    if (title) video.title = title;
+    if (description !== undefined) video.description = description;
+    if (type) video.type = type;
+    if (duration) video.duration = Number(duration);
+    if (category) video.category = category;
+    if (subCategory) video.subCategory = subCategory;
+
+    // 🎥 If new video uploaded
+    if (req.file) {
+      const filePath = req.file.path.replace(/\\/g, "/");
+      video.videoUrl = filePath;
+    }
+
+    await video.save();
+
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+
+    res.status(200).json({
+      success: true,
+      message: "Video updated successfully",
+      video: {
+        ...video.toObject(),
+        videoUrl: `${baseUrl}/${video.videoUrl}`,
+      },
+    });
+  } catch (error) {
+    console.error("Edit my video error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+
+exports.deleteMyVideo = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    // 🔒 Find only user's video
+    const video = await Video.findOne({
+      _id: id,
+      creator: userId,
+    });
+
+    if (!video) {
+      return res.status(404).json({
+        success: false,
+        message: "Video not found or not authorized",
+      });
+    }
+
+    // 🗑️ Delete video file from server
+    if (video.videoUrl && fs.existsSync(video.videoUrl)) {
+      fs.unlinkSync(video.videoUrl);
+    }
+
+    await video.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: "Video deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete my video error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+
+exports.getMyVideos = async (req, res) => {
+  try {
+    const userId = req.user._id; // ✅ current user
+
+    const videos = await Video.find({ creator: userId })
+      .populate("category", "name")
+      .populate("subCategory", "name")
+      .sort({ createdAt: -1 });
+
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+
+    const updatedVideos = videos.map((video) => {
+      const videoObj = video.toObject();
+      return {
+        ...videoObj,
+        videoUrl: `${baseUrl}/${videoObj.videoUrl}`,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      count: updatedVideos.length,
+      videos: updatedVideos,
+    });
+  } catch (error) {
+    console.error("Get my videos error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
     });
   }
 };

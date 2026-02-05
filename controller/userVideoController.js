@@ -1,5 +1,177 @@
 const Video = require("../models/Videomodel");
 // const User = require("../models/usermodel");
+const Channel = require("../models/Channel/ChannelModel");
+
+const imagekit = require("../utils/imagekit");
+const ChannelModel = require("../models/Channel/ChannelModel");
+
+const createChannel = async (req, res) => {
+  try {
+    const { title, channeldescription, category, contactemail, videoUrl } = req.body;
+    // const userId = req.user._id;
+    
+
+    if (!title || !category) {
+      return res.status(400).json({
+        success: false,
+        message: "Title and category are required",
+      });
+    }
+
+    // 🔹 Prevent duplicate channel by same user
+    const existingChannel = await ChannelModel.findOne({
+      title,
+      // creator: userId,
+    });
+
+    if (existingChannel) {
+      return res.status(409).json({
+        success: false,
+        message: "Channel with this title already exists",
+      });
+    }
+
+    let channelImageUrl = "";
+    let channelBannerUrl = "";
+
+    if (req.files?.channelImage?.[0]) {
+      const uploadImageResponse = await imagekit.upload({
+        file: req.files.channelImage[0].buffer,
+        fileName: req.files.channelImage[0].originalname,
+        folder: "channelImages",
+      });
+      channelImageUrl = uploadImageResponse.url;
+    }
+
+    if (req.files?.channelBanner?.[0]) {
+      const uploadBannerResponse = await imagekit.upload({
+        file: req.files.channelBanner[0].buffer,
+        fileName: req.files.channelBanner[0].originalname,
+        folder: "channelBanners",
+      });
+      channelBannerUrl = uploadBannerResponse.url;
+    }
+
+    const newChannel = await ChannelModel.create({
+      title,
+      channeldescription,
+      category,
+      contactemail,
+      videoUrl,
+      channelImage: channelImageUrl,
+      channelBanner: channelBannerUrl,
+      // creator: userId,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Channel created successfully",
+      channel: newChannel,
+    });
+  } catch (error) {
+    console.error("Error in createChannel:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Server error",
+    });
+  }
+};
+
+const createChannelByUploadVideo = async (req, res) => {
+  try {
+    const { channelId } = req.params;
+    const { title, videofile, thumbnail, category, description } = req.body;
+    const userId = req.user._id;
+    const videoUrl = req.file.path;
+    // Verify channel exists and belongs to user
+    const channel = await Channel.findOne({ _id: channelId });
+    if (!channel) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Channel not found or unauthorized" });
+    }
+    // Create new video
+    const newVideo = new Video({
+      title,
+      videofile: videoUrl,
+      thumbnail,
+      category,
+      description,
+      creator: userId,
+      channel: channelId,
+    });
+    await newVideo.save();
+    res.status(201).json({
+      success: true,
+      message: "Video uploaded to channel",
+      video: newVideo,
+    });
+  } catch (error) {
+    console.error("Error in createChannelByUploadVideo:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+const getChannels = async (req, res) => {
+  try {
+    const channels = await Channel.find({});
+    res.status(200).json({ success: true, channels });
+  } catch (error) {
+    console.error("Error in getChannels:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+const getChannelById = async (req, res) => {
+  try {
+    const { channelId } = req.params;
+    const channel = await Channel.findById(channelId);
+    if (!channel) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Channel not found" });
+    }
+    res.status(200).json({ success: true, channel });
+  } catch (error) {
+    console.error("Error in getChannelById:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+const getvideosByChannel = async (req, res) => {
+  try {
+    const { channelId } = req.params;
+    const videos = await Video.find({ channel: channelId });
+    res.status(200).json({ success: true, videos });
+  } catch (error) {
+    console.error("Error in getvideosByChannel:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+const deleteChannel = async (req, res) => {
+  try {
+    const { channelId } = req.params;
+    const userId = req.user._id;
+    const channel = await Channel.find.findOneAndDelete({
+      _id: channelId,
+      creator: userId,
+    });
+    if (!channel) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Channel not found or unauthorized" });
+    }
+    await Video.deleteMany({ channel: channelId });
+    res.status(200).json({
+      success: true,
+      message: "Channel and associated videos deleted",
+    });
+  } catch (error) {
+    console.error("Error in deleteChannel:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
 
 const getAllVideos = async (req, res) => {
   try {
@@ -39,7 +211,9 @@ const addView = async (req, res) => {
     // Increment view count for public view
     video.views = (video.views || 0) + 1;
     await video.save();
-    res.status(200).json({ success: true, message: "View added!", views: video.views });
+    res
+      .status(200)
+      .json({ success: true, message: "View added!", views: video.views });
   } catch (error) {
     console.error("Error in addView:", error);
     res.status(500).json({ success: false, message: "Server error" });
@@ -72,7 +246,6 @@ const likeVideo = async (req, res) => {
   }
 };
 
-
 const dislikeVideo = async (req, res) => {
   try {
     const { videoId } = req.params;
@@ -98,7 +271,6 @@ const dislikeVideo = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
 
 const addComment = async (req, res) => {
   try {
@@ -137,7 +309,6 @@ const addComment = async (req, res) => {
   }
 };
 
-
 const getComments = async (req, res) => {
   try {
     const { videoId } = req.params;
@@ -160,7 +331,6 @@ const getComments = async (req, res) => {
   }
 };
 
-
 const deleteComment = async (req, res) => {
   try {
     const { videoId, commentId } = req.params;
@@ -171,16 +341,19 @@ const deleteComment = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Video not found" });
     }
-    const commentIndex = video.comments.findIndex(comment => comment._id.toString() === commentId);
+    const commentIndex = video.comments.findIndex(
+      (comment) => comment._id.toString() === commentId,
+    );
     if (commentIndex === -1) {
       return res
         .status(404)
         .json({ success: false, message: "Comment not found" });
     }
     if (video.comments[commentIndex].user.toString() !== userId.toString()) {
-      return res
-        .status(403)
-        .json({ success: false, message: "You are not authorized to delete this comment" });
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to delete this comment",
+      });
     }
     video.comments.splice(commentIndex, 1);
     await video.save();
@@ -190,7 +363,6 @@ const deleteComment = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
 
 // const getVideoInteraction = async (req, res) => {
 //   try {
@@ -231,8 +403,8 @@ const getVideoInteraction = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      liked: false,        // user identify nahi ho raha
-      disliked: false,     // user identify nahi ho raha
+      liked: false, // user identify nahi ho raha
+      disliked: false, // user identify nahi ho raha
       likes: video.likes?.length || 0,
       dislikes: video.dislikes?.length || 0,
     });
@@ -255,5 +427,10 @@ module.exports = {
   getComments,
   deleteComment,
   getVideoInteraction,
-  
+  createChannel,
+  createChannelByUploadVideo,
+  getChannels,
+  getChannelById,
+  getvideosByChannel,
+  deleteChannel,
 };

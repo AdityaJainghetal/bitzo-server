@@ -178,28 +178,28 @@ router.post("/auth/google", async (req, res) => {
   }
 });
 
-/* =======================
-   USER PROFILE (JWT)
-======================= */
 router.get("/profile", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.userId;
 
     const user = await User.findById(userId)
-      .select("name email picture bio createdAt lastLogin")
+      .select("_id name email")
       .lean();
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
+    // Authorization header se token
+    const token = req.headers.authorization?.split(" ")[1];
+
     return res.status(200).json({
       success: true,
+      token: token,
       user: {
-        ...user,
-        joinedAt: user.createdAt
-          ? new Date(user.createdAt).toLocaleDateString()
-          : null,
+        id: user._id,
+        name: user.name,
+        email: user.email,
       },
     });
   } catch (error) {
@@ -207,5 +207,6 @@ router.get("/profile", authMiddleware, async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 });
+
 
 module.exports = router;

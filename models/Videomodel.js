@@ -42,7 +42,6 @@
 
 // module.exports = mongoose.model("Video", videoSchema);
 
-
 // const mongoose = require("mongoose");
 
 // const videoSchema = new mongoose.Schema(
@@ -142,12 +141,16 @@ const videoSchema = new mongoose.Schema(
       required: true,
     },
 
-    type: {
-      type: String,
-      enum: ["short", "long", "reel"],
-      required: true,
-    },
+   
 
+    category: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+    },
+    // subCategory: {
+    //   type: mongoose.Schema.Types.ObjectId,
+    //   ref: "Subcategory",
+    // },
     duration: {
       type: Number,
     },
@@ -191,12 +194,25 @@ const videoSchema = new mongoose.Schema(
     thumbnail: {
       type: String,
     },
+    comments: [
+      {
+        text: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
 
     audio: {
       type: String,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Video", videoSchema);

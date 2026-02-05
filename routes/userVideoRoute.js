@@ -35,12 +35,27 @@ const {
   deleteComment,
   addComment,
   getComments,
+  deleteChannel,
+  getvideosByChannel,
+  getChannelById,
+  getChannels,
+  createChannelByUploadVideo,
+  createChannel,
   // dislikeVideo,
   // getVideoInteraction,
 } = require("../controller/userVideoController");
 // const isAuthenticated = require("../middlewares/Authmiddleware");
-
+const upload = require("../middlewares/multer");
+const isAuthenticated = require("../middlewares/isAuthenticated");
 // Public routes (no auth required)
+router.post("/createchannel", isAuthenticated, createChannel);
+router.post("/create-channel-by-upload-video", upload.single("video"), createChannelByUploadVideo);
+router.get("/channels", getChannels);
+router.get("/channel/:id", getChannelById);
+router.get("/channel/:id/videos", getvideosByChannel);
+router.delete("/channel/:id", deleteChannel);
+
+// Protected routes (require authentication)
 router.get("/",  getAllVideos);
 router.get("/:id",  getVideoById);
 router.post("/:videoId/view", addView);
