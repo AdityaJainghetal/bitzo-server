@@ -23,11 +23,10 @@
 
 // module.exports = upload;
 
-
 const multer = require("multer");
 const path = require("path");
 
-const storage = multer.diskStorage({
+const diskStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "uploads/");
   },
@@ -36,23 +35,37 @@ const storage = multer.diskStorage({
   },
 });
 
-// const fileFilter = (req, file, cb) => {
-//   if (file.mimetype.startsWith("video")) {
-//     cb(null, true);
-//   } else {
-//     cb(new Error("Only video files allowed"), false);
-//   }
-// };
+const memoryStorage = multer.memoryStorage();
 
-const fileFilter = (req, file, cb) => {
+// File filter for videos (MP4 only)
+const videoFileFilter = (req, file, cb) => {
   if (file.mimetype === "video/mp4") {
     cb(null, true);
   } else {
     cb(new Error("Only MP4 videos allowed"), false);
   }
-}
+};
 
-module.exports = multer({
-  storage,
-  fileFilter,
+// File filter for images
+const imageFileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith("image/")) {
+    cb(null, true);
+  } else {
+    cb(new Error("Only image files allowed"), false);
+  }
+};
+
+// Video upload middleware (disk storage)
+const videoUpload = multer({
+  storage: diskStorage,
+  fileFilter: videoFileFilter,
 });
+
+// Image upload middleware for channel creation (memory storage for imagekit)
+const imageUpload = multer({
+  storage: memoryStorage,
+  fileFilter: imageFileFilter,
+});
+
+module.exports = videoUpload;
+module.exports.imageUpload = imageUpload;

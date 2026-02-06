@@ -3,31 +3,31 @@ const Video = require("../models/Videomodel");
 const Channel = require("../models/Channel/ChannelModel");
 
 const imagekit = require("../utils/imagekit");
-const ChannelModel = require("../models/Channel/ChannelModel");
+const categoryModel = require("../models/CategoryModel/category.model");
 
 const createChannel = async (req, res) => {
   try {
-    const { title, channeldescription, category, contactemail, videoUrl } = req.body;
-    // const userId = req.user._id;
-    
+    console.log("Request body:", req.body);
+    console.log("Request files:", req.files);
 
-    if (!title || !category) {
+    const { name, channeldescription, category, contactemail, videoUrl } =
+      req.body;
+
+    const userId = req.user.userId;
+
+    if (!name || !category) {
       return res.status(400).json({
         success: false,
-        message: "Title and category are required",
+        message: "Channel name and category are required",
       });
     }
 
-    // 🔹 Prevent duplicate channel by same user
-    const existingChannel = await ChannelModel.findOne({
-      title,
-      // creator: userId,
-    });
-
-    if (existingChannel) {
-      return res.status(409).json({
+    // 🔹 Check category exists
+    const categoryData = await categoryModel.findById(category);
+    if (!categoryData) {
+      return res.status(404).json({
         success: false,
-        message: "Channel with this title already exists",
+        message: "Category not found",
       });
     }
 
@@ -35,42 +35,85 @@ const createChannel = async (req, res) => {
     let channelBannerUrl = "";
 
     if (req.files?.channelImage?.[0]) {
-      const uploadImageResponse = await imagekit.upload({
-        file: req.files.channelImage[0].buffer,
-        fileName: req.files.channelImage[0].originalname,
-        folder: "channelImages",
-      });
-      channelImageUrl = uploadImageResponse.url;
+      try {
+        const file = req.files.channelImage[0];
+        console.log("Uploading channel image:", {
+          name: file.originalname,
+          size: file.size,
+          mimetype: file.mimetype,
+        });
+
+        // Convert buffer to base64 string
+        const base64String = file.buffer.toString("base64");
+
+        const imageRes = await imagekit.upload({
+          file: base64String,
+          fileName: `channel-img-${Date.now()}-${file.originalname}`,
+          folder: "channelImages",
+          overwriteFile: true,
+        });
+        channelImageUrl = imageRes.url;
+        console.log("✅ Channel image uploaded:", channelImageUrl);
+      } catch (imageError) {
+        console.error("❌ ImageKit Error:", imageError);
+        console.error("Full error:", JSON.stringify(imageError, null, 2));
+        throw imageError;
+      }
     }
 
     if (req.files?.channelBanner?.[0]) {
-      const uploadBannerResponse = await imagekit.upload({
-        file: req.files.channelBanner[0].buffer,
-        fileName: req.files.channelBanner[0].originalname,
-        folder: "channelBanners",
-      });
-      channelBannerUrl = uploadBannerResponse.url;
+      try {
+        const file = req.files.channelBanner[0];
+        console.log("Uploading channel banner:", {
+          name: file.originalname,
+          size: file.size,
+          mimetype: file.mimetype,
+        });
+
+        // Convert buffer to base64 string
+        const base64String = file.buffer.toString("base64");
+
+        const bannerRes = await imagekit.upload({
+          file: base64String,
+          fileName: `channel-banner-${Date.now()}-${file.originalname}`,
+          folder: "channelBanners",
+          overwriteFile: true,
+        });
+        channelBannerUrl = bannerRes.url;
+        console.log("✅ Channel banner uploaded:", channelBannerUrl);
+      } catch (bannerError) {
+        console.error("❌ ImageKit Error:", bannerError);
+        console.error("Full error:", JSON.stringify(bannerError, null, 2));
+        throw bannerError;
+      }
     }
 
-    const newChannel = await ChannelModel.create({
-      title,
+    const newChannel = await Channel.create({
+      name: name,
+
       channeldescription,
-      category,
+      category: categoryData._id,
       contactemail,
-      videoUrl,
+      videoUrl: videoUrl || "",
       channelImage: channelImageUrl,
       channelBanner: channelBannerUrl,
-      // creator: userId,
+      creator: userId,
     });
 
-    res.status(201).json({
+    // 🔹 Populate category name for response
+    const populatedChannel = await Channel.findById(newChannel._id).populate(
+      "category",
+      "name",
+    );
+
+    return res.status(201).json({
       success: true,
       message: "Channel created successfully",
-      channel: newChannel,
+      channel: populatedChannel,
     });
   } catch (error) {
     console.error("Error in createChannel:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message || "Server error",
     });
@@ -80,7 +123,7 @@ const createChannel = async (req, res) => {
 const createChannelByUploadVideo = async (req, res) => {
   try {
     const { channelId } = req.params;
-    const { title, videofile, thumbnail, category, description } = req.body;
+    const { name, videofile, thumbnail, category, description } = req.body;
     const userId = req.user._id;
     const videoUrl = req.file.path;
     // Verify channel exists and belongs to user
@@ -92,7 +135,7 @@ const createChannelByUploadVideo = async (req, res) => {
     }
     // Create new video
     const newVideo = new Video({
-      title,
+      name,
       videofile: videoUrl,
       thumbnail,
       category,
@@ -114,11 +157,18 @@ const createChannelByUploadVideo = async (req, res) => {
 
 const getChannels = async (req, res) => {
   try {
-    const channels = await Channel.find({});
-    res.status(200).json({ success: true, channels });
+    const channels = await Channel.find({}).populate("category", "_id name"); // 👈 id + name
+
+    res.status(200).json({
+      success: true,
+      channels,
+    });
   } catch (error) {
     console.error("Error in getChannels:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 

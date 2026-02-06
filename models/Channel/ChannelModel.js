@@ -5,11 +5,12 @@ const mongoose = require("mongoose");
 
 const channelSchema = new mongoose.Schema(
   {
-    title: {
+    name: {
       type: String,
       required: true,
       trim: true,
     },
+  
 
     channeldescription: {
       type: String,
@@ -43,11 +44,11 @@ const channelSchema = new mongoose.Schema(
       default: "",
     },
 
-    // creator: {
-    //   type: mongoose.Schema.Types.ObjectId,
-    //   ref: "User",
-    //   required: true,
-    // },
+    creator: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
   },
   { timestamps: true }
 );
