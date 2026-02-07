@@ -61,6 +61,12 @@ const videoUpload = multer({
   fileFilter: videoFileFilter,
 });
 
+// Flexible upload middleware - accepts any file (for createuploadvideo)
+const uploadAny = multer({
+  storage: diskStorage,
+  // No file filter - accept any file type
+});
+
 // Image upload middleware for channel creation (memory storage for imagekit)
 const imageUpload = multer({
   storage: memoryStorage,
@@ -68,4 +74,5 @@ const imageUpload = multer({
 });
 
 module.exports = videoUpload;
+module.exports.uploadAny = uploadAny;
 module.exports.imageUpload = imageUpload;

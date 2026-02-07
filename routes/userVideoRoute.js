@@ -46,7 +46,7 @@ const {
 } = require("../controller/userVideoController");
 // const isAuthenticated = require("../middlewares/Authmiddleware");
 const upload = require("../middlewares/multer");
-const { imageUpload } = require("../middlewares/multer");
+const { imageUpload, uploadAny } = require("../middlewares/multer");
 const isAuthenticated = require("../middlewares/isAuthenticated");
 // Public routes (no auth required)
 router.post(
@@ -59,9 +59,9 @@ router.post(
   createChannel,
 );
 router.post(
-  "/createuploadvideo",
+  "/createuploadvideo/:id",
   isAuthenticated,
-  upload.single("video"),
+  uploadAny.any(), // Accept any file type without strict filtering
   createChannelByUploadVideo,
 );
 router.get("/channel", getChannels);

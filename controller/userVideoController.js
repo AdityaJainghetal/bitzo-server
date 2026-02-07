@@ -1,7 +1,7 @@
 const Video = require("../models/Videomodel");
 // const User = require("../models/usermodel");
 const Channel = require("../models/Channel/ChannelModel");
-
+const mongoose = require("mongoose");
 const imagekit = require("../utils/imagekit");
 const categoryModel = require("../models/CategoryModel/category.model");
 
@@ -120,29 +120,107 @@ const createChannel = async (req, res) => {
   }
 };
 
+// const createChannelByUploadVideo = async (req, res) => {
 const createChannelByUploadVideo = async (req, res) => {
   try {
-    const { channelId } = req.params;
-    const { name, videofile, thumbnail, category, description } = req.body;
-    const userId = req.user._id;
-    const videoUrl = req.file.path;
-    // Verify channel exists and belongs to user
-    const channel = await Channel.findOne({ _id: channelId });
+    const channelParam = req.params.id
+      ? decodeURIComponent(req.params.id)
+      : null;
+    const { name, thumbnail, category, description } = req.body;
+    const userId = req.user?._id || req.user?.userId;
+
+    console.log("Uploading video to channel:", channelParam);
+
+    // Support both upload.single() (req.file) and upload.any()/fields() (req.files)
+    let uploadedFile = req.file;
+    if (!uploadedFile && req.files) {
+      if (Array.isArray(req.files) && req.files.length > 0) {
+        uploadedFile = req.files[0];
+      } else if (typeof req.files === "object") {
+        // req.files could be an object when using fields(): { fieldname: [file] }
+        const keys = Object.keys(req.files);
+        if (keys.length > 0 && Array.isArray(req.files[keys[0]])) {
+          uploadedFile = req.files[keys[0]][0];
+        }
+      }
+    }
+
+    if (!uploadedFile) {
+      return res
+        .status(400)
+        .json({ success: false, message: "No video file uploaded" });
+    }
+
+    const videoUrl = uploadedFile.path || `uploads/${uploadedFile.filename}`;
+
+    // Find channel by ObjectId or email
+    let channel = null;
+    if (channelParam) {
+      if (mongoose.Types.ObjectId.isValid(channelParam)) {
+        // Try to find by ObjectId first
+        channel = await Channel.findById(channelParam);
+      } else {
+        // Try to find by email (case-insensitive)
+        channel = await Channel.findOne({
+          contactemail: channelParam.toLowerCase(),
+        });
+      }
+    }
+
     if (!channel) {
       return res
         .status(404)
-        .json({ success: false, message: "Channel not found or unauthorized" });
+        .json({ success: false, message: "Channel not found." });
     }
-    // Create new video
+    const channelId = channel._id;
+
+    // Determine thumbnail: prefer an uploaded image file, then req.body.thumbnail
+    const getFilePath = (file) =>
+      file?.path || (file?.filename ? `uploads/${file.filename}` : "");
+    let thumbnailUrl = "";
+
+    if (req.files) {
+      if (Array.isArray(req.files)) {
+        const thumbFile = req.files.find(
+          (f) =>
+            f.fieldname === "thumbnail" ||
+            (f.mimetype && f.mimetype.startsWith("image/")),
+        );
+        if (thumbFile) thumbnailUrl = getFilePath(thumbFile);
+      } else if (typeof req.files === "object") {
+        // When using fields() multer stores files as object: { fieldname: [file] }
+        for (const key of Object.keys(req.files)) {
+          const arr = req.files[key];
+          if (Array.isArray(arr) && arr.length > 0) {
+            const f =
+              arr.find(
+                (fi) =>
+                  fi.fieldname === "thumbnail" ||
+                  (fi.mimetype && fi.mimetype.startsWith("image/")),
+              ) || arr[0];
+            if (f && f.mimetype && f.mimetype.startsWith("image/")) {
+              thumbnailUrl = getFilePath(f);
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    // Fallback to any thumbnail value passed in body (could be a URL/base64)
+    if (!thumbnailUrl && thumbnail) thumbnailUrl = thumbnail;
+
+    // Create new video (map to schema fields)
     const newVideo = new Video({
-      name,
-      videofile: videoUrl,
-      thumbnail,
-      category,
-      description,
+      title: name,
+      videoUrl: videoUrl,
+      thumbnail: thumbnailUrl || "",
+      category: category || channel.category,
+      description: description || "",
       creator: userId,
       channel: channelId,
     });
+
     await newVideo.save();
     res.status(201).json({
       success: true,
