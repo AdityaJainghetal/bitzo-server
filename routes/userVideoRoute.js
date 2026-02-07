@@ -65,7 +65,7 @@ router.post(
   createChannelByUploadVideo,
 );
 router.get("/channel", getChannels);
-router.get("/channel/:id", getChannelById);
+router.get("/channel/:id", getChannelById); // ✅ Accepts both ID and email
 router.get("/channel/:id/videos", getvideosByChannel);
 router.delete("/channel/:id", deleteChannel);
 

@@ -123,13 +123,24 @@ const createChannel = async (req, res) => {
 // const createChannelByUploadVideo = async (req, res) => {
 const createChannelByUploadVideo = async (req, res) => {
   try {
-    const channelParam = req.params.id
-      ? decodeURIComponent(req.params.id)
-      : null;
+    const { id } = req.params; // ✅ Channel ID from URL parameter
     const { name, thumbnail, category, description } = req.body;
     const userId = req.user?._id || req.user?.userId;
 
-    console.log("Uploading video to channel:", channelParam);
+    console.log("📹 Uploading video to channel ID:", id);
+    console.log("✅ Creator ID from req.user:", userId);
+
+    if (!id) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Channel ID is required in URL" });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid channel ID format" });
+    }
 
     // Support both upload.single() (req.file) and upload.any()/fields() (req.files)
     let uploadedFile = req.file;
@@ -153,26 +164,14 @@ const createChannelByUploadVideo = async (req, res) => {
 
     const videoUrl = uploadedFile.path || `uploads/${uploadedFile.filename}`;
 
-    // Find channel by ObjectId or email
-    let channel = null;
-    if (channelParam) {
-      if (mongoose.Types.ObjectId.isValid(channelParam)) {
-        // Try to find by ObjectId first
-        channel = await Channel.findById(channelParam);
-      } else {
-        // Try to find by email (case-insensitive)
-        channel = await Channel.findOne({
-          contactemail: channelParam.toLowerCase(),
-        });
-      }
-    }
+    // ✅ Find channel by ID only
+    const channel = await Channel.findById(id);
 
     if (!channel) {
       return res
         .status(404)
-        .json({ success: false, message: "Channel not found." });
+        .json({ success: false, message: "Channel not found" });
     }
-    const channelId = channel._id;
 
     // Determine thumbnail: prefer an uploaded image file, then req.body.thumbnail
     const getFilePath = (file) =>
@@ -218,10 +217,12 @@ const createChannelByUploadVideo = async (req, res) => {
       category: category || channel.category,
       description: description || "",
       creator: userId,
-      channel: channelId,
+      channel: id,
     });
 
     await newVideo.save();
+    console.log("✅ Video saved with creator ID:", newVideo.creator);
+
     res.status(201).json({
       success: true,
       message: "Video uploaded to channel",
@@ -252,16 +253,43 @@ const getChannels = async (req, res) => {
 
 const getChannelById = async (req, res) => {
   try {
-    const { channelId } = req.params;
-    const channel = await Channel.findById(channelId);
+    const { id } = req.params;
+    console.log("📍 getChannelById called with id:", id);
+
+    let channel = null;
+
+    // Try to find by ObjectId first, then by email
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      console.log("✅ ID is valid ObjectId, searching by ID...");
+      channel = await Channel.findById(id);
+    } else {
+      console.log(
+        "📧 ID is email, searching by email (case-insensitive):",
+        id.toLowerCase(),
+      );
+      channel = await Channel.findOne({ contactemail: id.toLowerCase() });
+      if (!channel) {
+        console.log(
+          "❌ Channel not found by email. Searching in DB for all emails:",
+        );
+        const allChannels = await Channel.find({}, "contactemail");
+        console.log(
+          "Available emails in DB:",
+          allChannels.map((c) => c.contactemail),
+        );
+      }
+    }
+
     if (!channel) {
+      console.log("❌ Channel not found");
       return res
         .status(404)
         .json({ success: false, message: "Channel not found" });
     }
+    console.log("✅ Channel found:", channel._id);
     res.status(200).json({ success: true, channel });
   } catch (error) {
-    console.error("Error in getChannelById:", error);
+    console.error("❌ Error in getChannelById:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
@@ -269,7 +297,11 @@ const getChannelById = async (req, res) => {
 const getvideosByChannel = async (req, res) => {
   try {
     const { channelId } = req.params;
-    const videos = await Video.find({ channel: channelId });
+    // ✅ Populate creator field to get user details (userId ke saath user ka pura data)
+    const videos = await Video.find({ channel: channelId }).populate(
+      "creator",
+      "_id name email",
+    );
     res.status(200).json({ success: true, videos });
   } catch (error) {
     console.error("Error in getvideosByChannel:", error);

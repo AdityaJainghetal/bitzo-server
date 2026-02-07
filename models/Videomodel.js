@@ -141,8 +141,6 @@ const videoSchema = new mongoose.Schema(
       required: true,
     },
 
-   
-
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
@@ -186,6 +184,12 @@ const videoSchema = new mongoose.Schema(
       },
     ],
 
+    // ✅ CREATOR (user who uploaded the video)
+    creator: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+
     // Optional (if admin uploads)
     creatorName: {
       type: String,
@@ -194,19 +198,6 @@ const videoSchema = new mongoose.Schema(
     thumbnail: {
       type: String,
     },
-    comments: [
-      {
-        text: {
-          type: String,
-          required: true,
-          trim: true,
-        },
-        createdAt: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
 
     audio: {
       type: String,
