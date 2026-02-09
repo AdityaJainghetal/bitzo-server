@@ -57,6 +57,7 @@ app.use("/api/admin", adminRoute);
 app.use("/api/adminvideo", videoRoutes);
 app.use("/api/uservideo", userRoutes);
 
+
 // ---------- Health ----------
 app.get("/", (req, res) => {
   res.send("🚀 Server is running successfully");
