@@ -49,7 +49,8 @@ const {
 const upload = require("../middlewares/multer");
 const { imageUpload, uploadAny } = require("../middlewares/multer");
 const isAuthenticated = require("../middlewares/isAuthenticated");
-const  backblazeUpload  = require("../middlewares/blazerMiddlware");
+// const  backblazeUpload  = require("../middlewares/blazerMiddlware");
+const uploadToBackblaze = require("../middlewares/blazerMiddlware");
 // Public routes (no auth required)
 router.post(
   "/createchannel",
@@ -74,12 +75,19 @@ router.post(
 //   uploadVideo
 // );
 
+// router.post(
+//   "/upload/:id",
+//   isAuthenticated,
+//   backblazeUpload,
+//   uploadVideo
+// );
 router.post(
-  "/upload/:id",
+  "/upload/:channelId",
   isAuthenticated,
-  backblazeUpload,
+  ...uploadToBackblaze, // ✅ SPREAD ARRAY
   uploadVideo
 );
+
 
 router.get("/channel", getChannels);
 router.get("/channel/:id", getChannelById); // ✅ Accepts both ID and email
