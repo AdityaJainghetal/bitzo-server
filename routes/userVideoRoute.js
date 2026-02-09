@@ -41,6 +41,7 @@ const {
   getChannels,
   createChannelByUploadVideo,
   createChannel,
+  uploadVideo,
   // dislikeVideo,
   // getVideoInteraction,
 } = require("../controller/userVideoController");
@@ -48,6 +49,7 @@ const {
 const upload = require("../middlewares/multer");
 const { imageUpload, uploadAny } = require("../middlewares/multer");
 const isAuthenticated = require("../middlewares/isAuthenticated");
+const  backblazeUpload  = require("../middlewares/blazerMiddlware");
 // Public routes (no auth required)
 router.post(
   "/createchannel",
@@ -58,12 +60,27 @@ router.post(
   ]),
   createChannel,
 );
+// router.post(
+//   "/createuploadvideo/:id",
+//   isAuthenticated,
+//   uploadAny.any(), // Accept any file type without strict filtering
+//   createChannelByUploadVideo,
+// );
+
+// router.post(
+//   "/createuploadvideo/:id",
+//   isAuthenticated,
+//   backblazeUpload, // Use backblazeUpload middleware for video upload
+//   uploadVideo
+// );
+
 router.post(
-  "/createuploadvideo/:id",
+  "/upload/:id",
   isAuthenticated,
-  uploadAny.any(), // Accept any file type without strict filtering
-  createChannelByUploadVideo,
+  backblazeUpload,
+  uploadVideo
 );
+
 router.get("/channel", getChannels);
 router.get("/channel/:id", getChannelById); // ✅ Accepts both ID and email
 router.get("/channel/:id/videos", getvideosByChannel);

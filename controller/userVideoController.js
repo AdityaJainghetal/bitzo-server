@@ -4,7 +4,7 @@ const Channel = require("../models/Channel/ChannelModel");
 const mongoose = require("mongoose");
 const imagekit = require("../utils/imagekit");
 const categoryModel = require("../models/CategoryModel/category.model");
-
+const {backblazeUpload} = require("../utils/backblaze");
 const createChannel = async (req, res) => {
   try {
     console.log("Request body:", req.body);
@@ -231,6 +231,70 @@ const createChannelByUploadVideo = async (req, res) => {
   } catch (error) {
     console.error("Error in createChannelByUploadVideo:", error);
     res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
+// const uploadVideo = async (req, res) => {
+//    const { name, thumbnail, category, description } = req.body;
+//     const userId = req.user?._id || req.user?.userId;
+
+//     if (!req.file) {
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "No video file uploaded" });
+//     }
+//     const videoUrl = req.file.path || `uploads/${req.file.filename}`;
+
+//     const newVideo = new Video({
+//       title: name,
+//       videoUrl: videoUrl,
+//       thumbnail: thumbnail || "",
+//       category: category || "",
+//       description: description || "",
+//       creator: userId,
+//     });
+
+//     await newVideo.save();
+//     res.status(201).json({
+//       success: true,
+//       message: "Video uploaded successfully",
+//       video: newVideo,
+//     });
+// }
+const uploadVideo = async (req, res) => {
+  try {
+    const { name, thumbnail, category, description } = req.body;
+    const userId = req.user?._id || req.user?.userId;
+
+    if (!req.videoUrl) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Video URL missing" });
+    }
+
+    const newVideo = new Video({
+      title: name,
+      videoUrl: req.videoUrl,
+      thumbnail: thumbnail || "",
+      category: category || "",
+      description: description || "",
+      creator: userId,
+    });
+
+    await newVideo.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Video uploaded successfully",
+      video: newVideo,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 
@@ -593,4 +657,5 @@ module.exports = {
   getChannelById,
   getvideosByChannel,
   deleteChannel,
+  uploadVideo
 };
