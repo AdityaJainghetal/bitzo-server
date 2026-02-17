@@ -39,22 +39,13 @@ const channelSchema = new mongoose.Schema(
       trim: true,
     },
 
-    videoUrl: {
-      type: String,
-      default: "",
-    },
-    Videoname:{
-      type: String,
-      default: "",
-    },
-    thumbnailUrl: {
-      type: String,
-      default: "",
-    },
-    thumbnail: {
-      type: String,
-      default: "",
-    },
+    Videosuser: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Video",
+      },
+    ],
+
 
     creator: {
       type: mongoose.Schema.Types.ObjectId,
