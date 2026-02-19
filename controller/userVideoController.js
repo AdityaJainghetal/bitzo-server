@@ -1,10 +1,9 @@
 const Video = require("../models/Videomodel");
-// const User = require("../models/usermodel");
 const Channel = require("../models/Channel/ChannelModel");
 const mongoose = require("mongoose");
 const imagekit = require("../utils/imagekit");
 const categoryModel = require("../models/CategoryModel/category.model");
-// const {backblazeUpload} = require("../utils/backblaze");
+
 const createChannel = async (req, res) => {
   try {
     console.log("Request body:", req.body);
@@ -120,316 +119,132 @@ const createChannel = async (req, res) => {
   }
 };
 
-// const createChannelByUploadVideo = async (req, res) => {
-// const createChannelByUploadVideo = async (req, res) => {
-//   try {
-//     const { id } = req.params; // ✅ Channel ID from URL parameter
-//     const { name, thumbnail, category, description } = req.body;
-//     const userId = req.user?._id || req.user?.userId;
 
-//     console.log("📹 Uploading video to channel ID:", id);
-//     console.log("✅ Creator ID from req.user:", userId);
-
-//     if (!id) {
-//       return res
-//         .status(400)
-//         .json({ success: false, message: "Channel ID is required in URL" });
-//     }
-
-//     if (!mongoose.Types.ObjectId.isValid(id)) {
-//       return res
-//         .status(400)
-//         .json({ success: false, message: "Invalid channel ID format" });
-//     }
-
-//     // Support both upload.single() (req.file) and upload.any()/fields() (req.files)
-//     let uploadedFile = req.file;
-//     if (!uploadedFile && req.files) {
-//       if (Array.isArray(req.files) && req.files.length > 0) {
-//         uploadedFile = req.files[0];
-//       } else if (typeof req.files === "object") {
-//         // req.files could be an object when using fields(): { fieldname: [file] }
-//         const keys = Object.keys(req.files);
-//         if (keys.length > 0 && Array.isArray(req.files[keys[0]])) {
-//           uploadedFile = req.files[keys[0]][0];
-//         }
-//       }
-//     }
-
-//     if (!uploadedFile) {
-//       return res
-//         .status(400)
-//         .json({ success: false, message: "No video file uploaded" });
-//     }
-
-//     const videoUrl = uploadedFile.path || `uploads/${uploadedFile.filename}`;
-
-//     // ✅ Find channel by ID only
-//     const channel = await Channel.findById(id);
-
-//     if (!channel) {
-//       return res
-//         .status(404)
-//         .json({ success: false, message: "Channel not found" });
-//     }
-
-//     // Determine thumbnail: prefer an uploaded image file, then req.body.thumbnail
-//     const getFilePath = (file) =>
-//       file?.path || (file?.filename ? `uploads/${file.filename}` : "");
-//     let thumbnailUrl = "";
-
-//     if (req.files) {
-//       if (Array.isArray(req.files)) {
-//         const thumbFile = req.files.find(
-//           (f) =>
-//             f.fieldname === "thumbnail" ||
-//             (f.mimetype && f.mimetype.startsWith("image/")),
-//         );
-//         if (thumbFile) thumbnailUrl = getFilePath(thumbFile);
-//       } else if (typeof req.files === "object") {
-//         // When using fields() multer stores files as object: { fieldname: [file] }
-//         for (const key of Object.keys(req.files)) {
-//           const arr = req.files[key];
-//           if (Array.isArray(arr) && arr.length > 0) {
-//             const f =
-//               arr.find(
-//                 (fi) =>
-//                   fi.fieldname === "thumbnail" ||
-//                   (fi.mimetype && fi.mimetype.startsWith("image/")),
-//               ) || arr[0];
-//             if (f && f.mimetype && f.mimetype.startsWith("image/")) {
-//               thumbnailUrl = getFilePath(f);
-//               break;
-//             }
-//           }
-//         }
-//       }
-//     }
-
-//     // Fallback to any thumbnail value passed in body (could be a URL/base64)
-//     if (!thumbnailUrl && thumbnail) thumbnailUrl = thumbnail;
-
-//     // Create new video (map to schema fields)
-//     const newVideo = new Video({
-//       title: name,
-//       videoUrl: videoUrl,
-//       thumbnail: thumbnailUrl || "",
-//       category: category || channel.category,
-//       description: description || "",
-//       creator: userId,
-//       channel: id,
-//     });
-
-//     await newVideo.save();
-//     console.log("✅ Video saved with creator ID:", newVideo.creator);
-
-//     res.status(201).json({
-//       success: true,
-//       message: "Video uploaded to channel",
-//       video: newVideo,
-//     });
-//   } catch (error) {
-//     console.error("Error in createChannelByUploadVideo:", error);
-//     res.status(500).json({ success: false, message: "Server error" });
-//   }
-// };
-
-
-// const uploadVideo = async (req, res) => {
-//   try {
-//    const { id } = req.params; // ✅ Channel ID from URL parameter
-//     const { name, thumbnail, category, description } = req.body;
-//     const userId = req.user?._id || req.user?.userId;
-//     if (!req.uploadedVideo) {
-//       return res.status(400).json({ success: false, message: 'Video upload failed' });
-//     }
-
-//     const newVideo = new Video({
-//       name,
-//       description,
-//       category,
-//       channel: channelId,
-//       videofile: req.uploadedVideo.url,       // or videoUrl – whatever field you use
-//       // thumbnail: if you also upload thumbnail → add here
-//       uploadedBy: req.user.id,
-//       duration: req.body.duration || 0,
-//     });
-
-//     await newVideo.save();
-
-//     return res.status(201).json({
-//       success: true,
-//       message: 'Video uploaded successfully',
-//       video: newVideo,
-//     });
-//   } catch (err) {
-//     console.error(err);
-//     return res.status(500).json({
-//       success: false,
-//       message: 'Server error while saving video',
-//     });
-//   }
-// };
-
-
-// const Video = require('../models/Video'); // make sure you import your Video model
-
-// const uploadVideo = async (req, res) => {
-//   try {
-//     // 1. Get channel ID from URL parameter (:id)
-//     const channelId = req.params.id;
-
-//     // 2. Get data from body
-//     const { name, description, category } = req.body;
-
-//     // 3. Get authenticated user ID
-//     const userId = req.user?._id || req.user?.userId;
-//     if (!userId) {
-//       return res.status(401).json({
-//         success: false,
-//         message: 'User not authenticated',
-//       });
-//     }
-
-//     // 4. Check if video was successfully uploaded to Backblaze
-//     if (!req.uploadedVideo || !req.uploadedVideo.url) {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'Video upload to storage failed',
-//       });
-//     }
-
-//     // 5. Create new video document
-//     const newVideo = new Video({
-//       name: name?.trim(),
-//       description: description?.trim() || '',
-//       category,
-//       channel: channelId,               // fixed: use channelId (not undefined channelId)
-//       videofile: req.uploadedVideo.url, // Backblaze public URL
-//       uploadedBy: userId,
-//       duration: req.body.duration || 0,
-
-//       // Optional fields (add if you need them)
-//       // thumbnail: req.uploadedThumbnail?.url || null,
-//       // size: req.uploadedVideo.size,
-//       // mimeType: req.uploadedVideo.mimeType,
-//       // originalName: req.uploadedVideo.originalName,
-//     });
-
-//     // 6. Save to database
-//     await newVideo.save();
-
-//     // 7. Send success response
-//     return res.status(201).json({
-//       success: true,
-//       message: 'Video uploaded and saved successfully',
-//       video: newVideo,
-//     });
-//   } catch (err) {
-//     console.error('Error in uploadVideo controller:', err);
-
-//     // Better error handling
-//     if (err.name === 'ValidationError') {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'Validation error',
-//         errors: err.errors,
-//       });
-//     }
-
-//     return res.status(500).json({
-//       success: false,
-//       message: 'Server error while saving video',
-//       error: err.message,
-//     });
-//   }
-// };
 const uploadVideo = async (req, res) => {
   try {
+    const { channelId } = req.params;
     const { name, description, category } = req.body;
 
-    console.log("VIDEO:", req.uploadedVideo);
+    if (!req.files || !req.files.video) {
+      return res.status(400).json({ success: false, message: "Video file required" });
+    }
+
+    const videoFile = req.files.video[0];
+    const thumbnailFile = req.files.thumbnail ? req.files.thumbnail[0] : null;
+
+    const videoPath = videoFile.path.replace(/\\/g, "/");
+    const thumbnailPath = thumbnailFile ? thumbnailFile.path.replace(/\\/g, "/") : null;
+
+    const newVideo = new Video({
+      channel: channelId,
+      title: name?.trim() || "Untitled",
+      description: description || "",
+      category: category || null,
+      videoUrl: videoPath,
+      thumbnail: thumbnailPath,
+      duration: 0, // calculate later if needed
+      uploadedBy: req.user?.id, // from authenticate middleware
+      views: 0,
+      createdAt: new Date(),
+    });
+
+    await newVideo.save();
+
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const fullVideoUrl = `${baseUrl}/${videoPath}`;
+    const fullThumbUrl = thumbnailPath ? `${baseUrl}/${thumbnailPath}` : null;
 
     res.status(201).json({
       success: true,
-      message: "Video uploaded successfully",
-      video: req.uploadedVideo,
-      data: { name, description, category },
+      message: "Video uploaded",
+      video: {
+        ...newVideo.toObject(),
+        videoUrl: fullVideoUrl,
+        thumbnailUrl: fullThumbUrl,
+      },
     });
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    console.error("Upload error:", err);
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// module.exports = { uploadVideo };
-
-// const uploadVideo = async (req, res) => {
-//    const { name, thumbnail, category, description } = req.body;
-//     const userId = req.user?._id || req.user?.userId;
-
-//     if (!req.file) {
-//       return res
-//         .status(400)
-//         .json({ success: false, message: "No video file uploaded" });
-//     }
-//     const videoUrl = req.file.path || `uploads/${req.file.filename}`;
-
-//     const newVideo = new Video({
-//       title: name,
-//       videoUrl: videoUrl,
-//       thumbnail: thumbnail || "",
-//       category: category || "",
-//       description: description || "",
-//       creator: userId,
-//     });
-
-//     await newVideo.save();
-//     res.status(201).json({
-//       success: true,
-//       message: "Video uploaded successfully",
-//       video: newVideo,
-//     });
-// }
-
-
 // const uploadVideo = async (req, res) => {
 //   try {
-//     const { name, thumbnail, category, description } = req.body;
-//     const userId = req.user?._id || req.user?.userId;
+//     const { name, description, category } = req.body;
 
-//     if (!req.videoUrl) {
-//       return res
-//         .status(400)
-//         .json({ success: false, message: "Video URL missing" });
-//     }
-
-//     const newVideo = new Video({
-//       title: name,
-//       videoUrl: req.videoUrl,
-//       thumbnail: thumbnail || "",
-//       category: category || "",
-//       description: description || "",
-//       creator: userId,
-//     });
-
-//     await newVideo.save();
+//     console.log("VIDEO:", req.uploadedVideo);
 
 //     res.status(201).json({
 //       success: true,
 //       message: "Video uploaded successfully",
-//       video: newVideo,
+//       video: req.uploadedVideo,
+//       data: { name, description, category },
 //     });
-//   } catch (error) {
-//     console.error(error);
+//   } catch (err) {
 //     res.status(500).json({
 //       success: false,
-//       message: "Server error",
+//       message: err.message,
 //     });
 //   }
 // };
+
+// const uploadVideo = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const {
+//       title,
+//       description,
+//       type,
+//       duration,
+//       category,
+//       subCategory,
+//     } = req.body;
+
+//     const video = await Video.findById(id);
+
+//     if (!video) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Video not found",
+//       });
+//     }
+
+//     if (title) video.title = title;
+//     if (description !== undefined) video.description = description;
+//     if (type) video.type = type;
+//     if (duration) video.duration = Number(duration);
+//     if (category) video.category = category;         // ✅ update category
+//     if (subCategory) video.subCategory = subCategory; // ✅ update subCategory
+
+//     if (req.file) {
+//       const filePath = req.file.path.replace(/\\/g, "/");
+//       video.videoUrl = filePath;
+//     }
+
+//     await video.save();
+
+//     const baseUrl = `${req.protocol}://${req.get("host")}`;
+//     const fullVideoUrl = `${baseUrl}/${video.videoUrl}`;
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Video updated successfully",
+//       video: {
+//         ...video.toObject(),
+//         videoUrl: fullVideoUrl,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Update error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Server error during update",
+//       error: error.message,
+//     });
+//   }
+// };
+
 
 const getChannels = async (req, res) => {
   try {
@@ -539,6 +354,66 @@ const getAllVideos = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+const recommendedVideos = async (req, res) => {
+  try {
+    const userCategory = req.user?.category; // user ki category
+
+    let videos = [];
+
+    if (userCategory) {
+    
+      const categoryVideos = await Video.find({ category: userCategory })
+        .sort({ createdAt: -1 }) // recent first
+        .limit(10);
+
+      videos = categoryVideos;
+    }
+
+    // 2️⃣ Agar 10 se kam mile toh baaki recent videos add karo
+    if (videos.length < 10) {
+      const remaining = 10 - videos.length;
+
+      const otherVideos = await Video.find({
+        category: { $ne: userCategory },
+      })
+        .sort({ createdAt: -1 })
+        .limit(remaining);
+
+      videos = [...videos, ...otherVideos];
+    }
+
+    res.status(200).json({
+      success: true,
+      videos,
+    });
+  } catch (error) {
+    console.error("Error in recommendedVideos:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+const trendingVideos = async (req, res) => {
+  try {
+    const videos = await Video.find({})
+      .sort({ views: -1, createdAt: -1 }) 
+      .limit(10);
+
+    res.status(200).json({
+      success: true,
+      videos,
+    });
+  } catch (error) {
+    console.error("Error in trendingVideos:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
 
 const getVideoById = async (req, res) => {
   try {
@@ -721,30 +596,7 @@ const deleteComment = async (req, res) => {
   }
 };
 
-// const getVideoInteraction = async (req, res) => {
-//   try {
-//     const { videoId } = req.params;
-//     const userId = req.user._id;
-//     const video = await Video.findById(videoId);
-//     if (!video) {
-//       return res
-//         .status(404)
-//         .json({ success: false, message: "Video not found" });
-//     }
-//     const isLiked = video.likes.includes(userId);
-//     const isDisliked = video.dislikes.includes(userId);
-//     res.status(200).json({
-//       success: true,
-//       liked: isLiked,
-//       disliked: isDisliked,
-//       likes: video.likes.length,
-//       dislikes: video.dislikes.length
-//     });
-//   } catch (error) {
-//     console.error("Error in getVideoInteraction:", error);
-//     res.status(500).json({ success: false, message: "Server error" });
-//   }
-// };
+
 const getVideoInteraction = async (req, res) => {
   try {
     const { videoId } = req.params;
@@ -785,10 +637,11 @@ module.exports = {
   deleteComment,
   getVideoInteraction,
   createChannel,
-  // createChannelByUploadVideo,
   getChannels,
   getChannelById,
   getvideosByChannel,
   deleteChannel,
-  uploadVideo
+  uploadVideo,
+  recommendedVideos,
+  trendingVideos,
 };

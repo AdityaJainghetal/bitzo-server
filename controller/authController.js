@@ -198,3 +198,21 @@ exports.loginUser = async (req, res) => {
     });
   }
 };
+
+
+exports.AllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select("-password").lean();
+    res.status(200).json({
+      success: true,
+      users,
+    });
+  }
+    catch (error) {
+    console.error("❌ Fetch users error:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};

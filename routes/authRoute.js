@@ -118,6 +118,7 @@ const { OAuth2Client } = require("google-auth-library");
 const User = require("../models/usermodel");
 const authMiddleware = require("../middlewares/isAuthenticated");
 const { registerUser, loginUser } = require("../controller/authController");
+const { getAllUsers } = require("../controller/AdminController/AdminController");
 
 const GOOGLE_CLIENT_ID =
   process.env.GOOGLE_CLIENT_ID ||
@@ -207,6 +208,7 @@ router.get("/profile", authMiddleware, async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 });
+router.get("/alluser",getAllUsers)
 
 
 module.exports = router;

@@ -3,7 +3,7 @@ const AllUser = require("../../models/usermodel");
 const generateToken = require("../../utils/generateToken");
 const bcrypt = require("bcryptjs");
 
-/* ===================== REGISTER ===================== */
+
 exports.registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -64,118 +64,6 @@ exports.registerUser = async (req, res) => {
   }
 };
 
-/* ===================== LOGIN ===================== */
-// exports.loginUser = async (req, res) => {
-//   try {
-//     const { email, password } = req.body;
-
-//     // 1. Validation
-//     if (!email || !password) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "All fields are required",
-//       });
-//     }
-
-//     const normalizedEmail = email.toLowerCase().trim();
-
-//     // 2. Find user (password explicitly selected)
-//     const user = await User.findOne({ email: normalizedEmail }).select("+password");
-
-//     if (!user || !user.password) {
-//       return res.status(401).json({
-//         success: false,
-//         message: "Invalid credentials",
-//       });
-//     }
-
-//     // 3. Compare password (NO undefined error now)
-//     const isMatch = await bcrypt.compare(password, user.password);
-//     if (!isMatch) {
-//       return res.status(401).json({
-//         success: false,
-//         message: "Invalid credentials",
-//       });
-//     }
-
-//     return res.status(200).json({
-//       success: true,
-//       message: "Login successful",
-//       token: generateToken(user._id),
-//       user: {
-//         id: user._id,
-//         name: user.name,
-//         email: user.email,
-//         role: user.role,
-//         trustScore: user.trustScore,
-//       },
-//     });
-//   } catch (error) {
-//     console.error("Login error:", error);
-//     return res.status(500).json({
-//       success: false,
-//       message: "Login failed",
-//     });
-//   }
-// };
-
-// exports.loginUser = async (req, res) => {
-//   try {
-//     const { email, password } = req.body;
-
-//     // 1. Validation
-//     if (!email || !password) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Email and password are required",
-//       });
-//     }
-
-//     const normalizedEmail = email.toLowerCase().trim();
-
-//     // 2. Find admin user
-//     const user = await User.findOne({
-//       email: normalizedEmail,
-//       role: "admin",
-//     }).select("+password");
-
-//     if (!user) {
-//       return res.status(401).json({
-//         success: false,
-//         message: "Admin not found",
-//       });
-//     }
-
-//     // 3. Compare password
-//     const isMatch = await bcrypt.compare(password, user.password);
-
-//     if (!isMatch) {
-//       return res.status(401).json({
-//         success: false,
-//         message: "Invalid credentials",
-//       });
-//     }
-
-//     // 4. Success response
-//     return res.status(200).json({
-//       success: true,
-//       message: "Admin login successful",
-//       token: generateToken(user._id),
-//       user: {
-//         id: user._id,
-//         name: user.name,
-//         email: user.email,
-//         role: user.role,
-//       },
-//     });
-//   } catch (error) {
-//     console.error("Admin login error:", error);
-//     return res.status(500).json({
-//       success: false,
-//       message: "Server error",
-//     });
-//   }
-// };
 
 
 exports.getAllUsers = async (req, res) => {
