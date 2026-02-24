@@ -42,6 +42,7 @@ exports.loginUser = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        token:user.token,
         role: user.role,
         trustScore: user.trustScore,
       },

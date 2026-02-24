@@ -3,6 +3,7 @@ const Channel = require("../models/Channel/ChannelModel");
 const mongoose = require("mongoose");
 const imagekit = require("../utils/imagekit");
 const categoryModel = require("../models/CategoryModel/category.model");
+const ChannelModel = require("../models/Channel/ChannelModel");
 
 const createChannel = async (req, res) => {
   try {
@@ -119,56 +120,168 @@ const createChannel = async (req, res) => {
   }
 };
 
+// const uploadVideo = async (req, res) => {
+//   try {
+//     const { channelId } = req.params;
+//     const { name, description, category } = req.body;
+// uploadedBy: req.user?.id || req.user?._id,
+//     if (!req.files || !req.files.video) {
+//       return res.status(400).json({ success: false, message: "Video file required" });
+//     }
+
+//     const videoFile = req.files.video[0];
+//     const thumbnailFile = req.files.thumbnail ? req.files.thumbnail[0] : null;
+
+//     const videoPath = videoFile.path.replace(/\\/g, "/");
+//     const thumbnailPath = thumbnailFile ? thumbnailFile.path.replace(/\\/g, "/") : null;
+
+//     const newVideo = new Video({
+//       channel: channelId,
+//       title: name?.trim() || "Untitled",
+//       description: description || "",
+//       category: category || null,
+//       videoUrl: videoPath,
+//       thumbnail: thumbnailPath,
+//       duration: 0, // calculate later if needed
+//       uploadedBy: req.user?.id, // from authenticate middleware
+//       views: 0,
+//       createdAt: new Date(),
+//     });
+
+//     await newVideo.save();
+
+//     const baseUrl = `${req.protocol}://${req.get("host")}`;
+//     const fullVideoUrl = `${baseUrl}/${videoPath}`;
+//     const fullThumbUrl = thumbnailPath ? `${baseUrl}/${thumbnailPath}` : null;
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Video uploaded",
+//       video: {
+//         ...newVideo.toObject(),
+//         videoUrl: fullVideoUrl,
+//         thumbnailUrl: fullThumbUrl,
+//       },
+//     });
+//   } catch (err) {
+//     console.error("Upload error:", err);
+//     res.status(500).json({ success: false, message: err.message });
+//   }
+// };
+
+// const uploadVideo = async (req, res) => {
+//   try {
+//     const { channelId } = req.params;
+//     const { name, description, category } = req.body;
+//     console.log("req.user:", req.user.userId);
+//     if (!req.files || !req.files.video) {
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "Video file required" });
+//     }
+
+//     const videoFile = req.files.video[0];
+//     const thumbnailFile = req.files.thumbnail ? req.files.thumbnail[0] : null;
+
+//     const videoPath = videoFile.path.replace(/\\/g, "/");
+//     const thumbnailPath = thumbnailFile
+//       ? thumbnailFile.path.replace(/\\/g, "/")
+//       : null;
+
+//     const newVideo = new Video({
+//       channel: channelId,
+//       title: name?.trim() || "Untitled",
+//       description: description || "",
+//       category: category || null,
+//       videoUrl: videoPath,
+//       thumbnail: thumbnailPath,
+//       duration: 0,
+//       uploadedBy: req.user?.userId || req.user?._id,
+//       views: 0,
+
+//       createdAt: new Date(),
+//     });
+
+//     await newVideo.save();
+
+//     const baseUrl = `${req.protocol}://${req.get("host")}`;
+//     const fullVideoUrl = `${baseUrl}/${videoPath}`;
+//     const fullThumbUrl = thumbnailPath ? `${baseUrl}/${thumbnailPath}` : null;
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Video uploaded",
+//       video: {
+//         ...newVideo.toObject(),
+//         videoUrl: fullVideoUrl,
+//         thumbnailUrl: fullThumbUrl,
+//       },
+//     });
+//   } catch (err) {
+//     console.error("Upload error:", err);
+//     res.status(500).json({ success: false, message: err.message });
+//   }
+// };
 
 const uploadVideo = async (req, res) => {
   try {
     const { channelId } = req.params;
     const { name, description, category } = req.body;
 
+    const channel = await ChannelModel.findById(channelId);
+    if (!channel) {
+      return res.status(404).json({
+        success: false,
+        message: "Channel not found",
+      });
+    }
+
     if (!req.files || !req.files.video) {
-      return res.status(400).json({ success: false, message: "Video file required" });
+      return res.status(400).json({
+        success: false,
+        message: "Video file required",
+      });
     }
 
     const videoFile = req.files.video[0];
-    const thumbnailFile = req.files.thumbnail ? req.files.thumbnail[0] : null;
+    const thumbnailFile = req.files.thumbnail
+      ? req.files.thumbnail[0]
+      : null;
 
     const videoPath = videoFile.path.replace(/\\/g, "/");
-    const thumbnailPath = thumbnailFile ? thumbnailFile.path.replace(/\\/g, "/") : null;
+    const thumbnailPath = thumbnailFile
+      ? thumbnailFile.path.replace(/\\/g, "/")
+      : null;
 
     const newVideo = new Video({
-      channel: channelId,
+      channel: channelId, // ✅ channel id save
+      category,
       title: name?.trim() || "Untitled",
-      description: description || "",
-      category: category || null,
+      description,
       videoUrl: videoPath,
       thumbnail: thumbnailPath,
-      duration: 0, // calculate later if needed
-      uploadedBy: req.user?.id, // from authenticate middleware
-      views: 0,
-      createdAt: new Date(),
+      uploadedBy: req.user?.userId,
     });
 
     await newVideo.save();
 
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
-    const fullVideoUrl = `${baseUrl}/${videoPath}`;
-    const fullThumbUrl = thumbnailPath ? `${baseUrl}/${thumbnailPath}` : null;
+    // ✅ Also push video into channel
+    channel.Videosuser.push(newVideo._id);
+    await channel.save();
 
     res.status(201).json({
       success: true,
-      message: "Video uploaded",
-      video: {
-        ...newVideo.toObject(),
-        videoUrl: fullVideoUrl,
-        thumbnailUrl: fullThumbUrl,
-      },
+      message: "Video uploaded successfully",
+      video: newVideo,
     });
   } catch (err) {
-    console.error("Upload error:", err);
-    res.status(500).json({ success: false, message: err.message });
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
-
 
 const getChannels = async (req, res) => {
   try {
@@ -286,7 +399,6 @@ const recommendedVideos = async (req, res) => {
     let videos = [];
 
     if (userCategory) {
-    
       const categoryVideos = await Video.find({ category: userCategory })
         .sort({ createdAt: -1 }) // recent first
         .limit(10);
@@ -322,7 +434,7 @@ const recommendedVideos = async (req, res) => {
 const trendingVideos = async (req, res) => {
   try {
     const videos = await Video.find({})
-      .sort({ views: -1, createdAt: -1 }) 
+      .sort({ views: -1, createdAt: -1 })
       .limit(10);
 
     res.status(200).json({
@@ -337,7 +449,6 @@ const trendingVideos = async (req, res) => {
     });
   }
 };
-
 
 const getVideoById = async (req, res) => {
   try {
@@ -519,7 +630,6 @@ const deleteComment = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
 
 const getVideoInteraction = async (req, res) => {
   try {

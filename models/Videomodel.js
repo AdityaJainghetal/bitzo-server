@@ -11,6 +11,18 @@ const videoSchema = new mongoose.Schema(
       ref: "User",
     },
 
+      channel: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Channel",
+      required: true,
+    },
+
+    uploadedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
     title: {
       type: String,
       required: true,
@@ -22,8 +34,8 @@ const videoSchema = new mongoose.Schema(
       trim: true,
     },
 
-    thumbnail:{
-      type:String
+    thumbnail: {
+      type: String,
     },
 
     videoUrl: {
