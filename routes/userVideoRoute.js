@@ -42,7 +42,7 @@ router.post(
 
 
 router.post(
-  "/upload/:channelId",                               // protects the route
+  "/upload/:channelId",                              
   isAuthenticated,
   upload.videoAndThumbnailUpload.fields([
     { name: "video",     maxCount: 1 },
