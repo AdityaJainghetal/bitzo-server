@@ -23,6 +23,10 @@ const channelSchema = new mongoose.Schema(
       required: true,
     },
 
+  owner: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "User"
+},
     channelImage: {
       type: String,
       default: "",
@@ -39,12 +43,13 @@ const channelSchema = new mongoose.Schema(
       trim: true,
     },
 
-    Videosuser: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Video",
-      },
-    ],
+   videos: [
+  {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Video",
+  },
+],
+
 
 
     creator: {

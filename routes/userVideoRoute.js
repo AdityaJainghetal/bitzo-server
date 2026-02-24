@@ -50,13 +50,13 @@ router.post(
   ]),
   uploadVideo
 );
-router.get("/channel", getChannels);
-router.get("/channel/:id", getChannelById);
-router.get("/channel/:id/videos", getvideosByChannel);
+router.get("/channel",isAuthenticated, getChannels);
+router.get("/channel/:id",isAuthenticated, getChannelById);
+router.get("/channel/:id/videos",isAuthenticated, getvideosByChannel);
 router.delete("/channel/:id", deleteChannel);
 
-router.get("/", getAllVideos);
-router.get("/:id", getVideoById);
+router.get("/",isAuthenticated, getAllVideos);
+router.get("/:id",isAuthenticated, getVideoById);
 router.post("/:videoId/view", addView);
 router.post("/:videoId/like", likeVideo);
 router.post("/:videoId/dislike", dislikeVideo);

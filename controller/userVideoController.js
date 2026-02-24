@@ -7,8 +7,7 @@ const ChannelModel = require("../models/Channel/ChannelModel");
 
 const createChannel = async (req, res) => {
   try {
-    console.log("Request body:", req.body);
-    console.log("Request files:", req.files);
+    
 
     const { name, channeldescription, category, contactemail, videoUrl } =
       req.body;
@@ -43,7 +42,6 @@ const createChannel = async (req, res) => {
           mimetype: file.mimetype,
         });
 
-        // Convert buffer to base64 string
         const base64String = file.buffer.toString("base64");
 
         const imageRes = await imagekit.upload({
@@ -120,108 +118,6 @@ const createChannel = async (req, res) => {
   }
 };
 
-// const uploadVideo = async (req, res) => {
-//   try {
-//     const { channelId } = req.params;
-//     const { name, description, category } = req.body;
-// uploadedBy: req.user?.id || req.user?._id,
-//     if (!req.files || !req.files.video) {
-//       return res.status(400).json({ success: false, message: "Video file required" });
-//     }
-
-//     const videoFile = req.files.video[0];
-//     const thumbnailFile = req.files.thumbnail ? req.files.thumbnail[0] : null;
-
-//     const videoPath = videoFile.path.replace(/\\/g, "/");
-//     const thumbnailPath = thumbnailFile ? thumbnailFile.path.replace(/\\/g, "/") : null;
-
-//     const newVideo = new Video({
-//       channel: channelId,
-//       title: name?.trim() || "Untitled",
-//       description: description || "",
-//       category: category || null,
-//       videoUrl: videoPath,
-//       thumbnail: thumbnailPath,
-//       duration: 0, // calculate later if needed
-//       uploadedBy: req.user?.id, // from authenticate middleware
-//       views: 0,
-//       createdAt: new Date(),
-//     });
-
-//     await newVideo.save();
-
-//     const baseUrl = `${req.protocol}://${req.get("host")}`;
-//     const fullVideoUrl = `${baseUrl}/${videoPath}`;
-//     const fullThumbUrl = thumbnailPath ? `${baseUrl}/${thumbnailPath}` : null;
-
-//     res.status(201).json({
-//       success: true,
-//       message: "Video uploaded",
-//       video: {
-//         ...newVideo.toObject(),
-//         videoUrl: fullVideoUrl,
-//         thumbnailUrl: fullThumbUrl,
-//       },
-//     });
-//   } catch (err) {
-//     console.error("Upload error:", err);
-//     res.status(500).json({ success: false, message: err.message });
-//   }
-// };
-
-// const uploadVideo = async (req, res) => {
-//   try {
-//     const { channelId } = req.params;
-//     const { name, description, category } = req.body;
-//     console.log("req.user:", req.user.userId);
-//     if (!req.files || !req.files.video) {
-//       return res
-//         .status(400)
-//         .json({ success: false, message: "Video file required" });
-//     }
-
-//     const videoFile = req.files.video[0];
-//     const thumbnailFile = req.files.thumbnail ? req.files.thumbnail[0] : null;
-
-//     const videoPath = videoFile.path.replace(/\\/g, "/");
-//     const thumbnailPath = thumbnailFile
-//       ? thumbnailFile.path.replace(/\\/g, "/")
-//       : null;
-
-//     const newVideo = new Video({
-//       channel: channelId,
-//       title: name?.trim() || "Untitled",
-//       description: description || "",
-//       category: category || null,
-//       videoUrl: videoPath,
-//       thumbnail: thumbnailPath,
-//       duration: 0,
-//       uploadedBy: req.user?.userId || req.user?._id,
-//       views: 0,
-
-//       createdAt: new Date(),
-//     });
-
-//     await newVideo.save();
-
-//     const baseUrl = `${req.protocol}://${req.get("host")}`;
-//     const fullVideoUrl = `${baseUrl}/${videoPath}`;
-//     const fullThumbUrl = thumbnailPath ? `${baseUrl}/${thumbnailPath}` : null;
-
-//     res.status(201).json({
-//       success: true,
-//       message: "Video uploaded",
-//       video: {
-//         ...newVideo.toObject(),
-//         videoUrl: fullVideoUrl,
-//         thumbnailUrl: fullThumbUrl,
-//       },
-//     });
-//   } catch (err) {
-//     console.error("Upload error:", err);
-//     res.status(500).json({ success: false, message: err.message });
-//   }
-// };
 
 const uploadVideo = async (req, res) => {
   try {
@@ -283,80 +179,248 @@ const uploadVideo = async (req, res) => {
   }
 };
 
+// const getChannels = async (req, res) => {
+//   try {
+//     const channels = await Channel.find({}).populate("category", "_id name",).populate("Videosuser"); // 👈 id + name
+
+//     res.status(200).json({
+//       success: true,
+//       channels,
+//     });
+//   } catch (error) {
+//     console.error("Error in getChannels:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Server error",
+//     });
+//   }
+// };
+
+
+
 const getChannels = async (req, res) => {
   try {
-    const channels = await Channel.find({}).populate("category", "_id name"); // 👈 id + name
+    const channels = await Channel.find({ user: req.user.id })
+      .populate("category", "_id name")
+      .populate("owner"); 
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
+      count: channels.length,
       channels,
     });
+
   } catch (error) {
-    console.error("Error in getChannels:", error);
-    res.status(500).json({
+    console.error("Error in getChannels:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+// const getChannelById = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     console.log("📍 getChannelById called with id:", id);
+
+//     let channel = null;
+
+//     // Try to find by ObjectId first, then by email
+//     if (mongoose.Types.ObjectId.isValid(id)) {
+//       console.log("✅ ID is valid ObjectId, searching by ID...");
+//       channel = await Channel.findById(id);
+//     } else {
+//       console.log(
+//         "📧 ID is email, searching by email (case-insensitive):",
+//         id.toLowerCase(),
+//       );
+//       channel = await Channel.findOne({ contactemail: id.toLowerCase() });
+//       if (!channel) {
+//         console.log(
+//           "❌ Channel not found by email. Searching in DB for all emails:",
+//         );
+//         const allChannels = await Channel.find({}, "contactemail");
+//         console.log(
+//           "Available emails in DB:",
+//           allChannels.map((c) => c.contactemail),
+//         );
+//       }
+//     }
+
+//     if (!channel) {
+//       console.log("❌ Channel not found");
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "Channel not found" });
+//     }
+//     console.log("✅ Channel found:", channel._id);
+//     res.status(200).json({ success: true, channel });
+//   } catch (error) {
+//     console.error("❌ Error in getChannelById:", error);
+//     res.status(500).json({ success: false, message: "Server error" });
+//   }
+// };
+
+// const getvideosByChannel = async (req, res) => {
+//   try {
+//     const { channelId } = req.params;
+//     // ✅ Populate creator field to get user details (userId ke saath user ka pura data)
+//     const videos = await Video.find({ channel: channelId }).populate(
+//       "creator",
+//       "_id name email",
+//     );
+//     res.status(200).json({ success: true, videos });
+//   } catch (error) {
+//     console.error("Error in getvideosByChannel:", error);
+//     res.status(500).json({ success: false, message: "Server error" });
+//   }
+// };
+
+
+// GET /api/channels/:id
+const getChannelById = async (req, res) => {
+  try {
+    const channelId = req.params.id;
+
+    // channel ID valid mongoose ObjectId hai ya nahi → simple check
+    if (!mongoose.Types.ObjectId.isValid(channelId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid channel ID format",
+      });
+    }
+
+    const channel = await Channel.findById(channelId)
+      .populate("category", "_id name")           // category ka name + _id
+      .populate("Videosuser");                     // videos ka data
+
+    // Extra safety: check karo ki yeh channel usi user ka hai jo request kar raha hai
+    if (!channel) {
+      return res.status(404).json({
+        success: false,
+        message: "Channel not found",
+      });
+    }
+
+    if (channel.user.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to view this channel",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      channel,   // ← sirf ek channel return ho raha hai
+    });
+
+  } catch (error) {
+    console.error("Error in getChannelById:", error.message);
+    return res.status(500).json({
       success: false,
       message: "Server error",
     });
   }
 };
 
-const getChannelById = async (req, res) => {
-  try {
-    const { id } = req.params;
-    console.log("📍 getChannelById called with id:", id);
-
-    let channel = null;
-
-    // Try to find by ObjectId first, then by email
-    if (mongoose.Types.ObjectId.isValid(id)) {
-      console.log("✅ ID is valid ObjectId, searching by ID...");
-      channel = await Channel.findById(id);
-    } else {
-      console.log(
-        "📧 ID is email, searching by email (case-insensitive):",
-        id.toLowerCase(),
-      );
-      channel = await Channel.findOne({ contactemail: id.toLowerCase() });
-      if (!channel) {
-        console.log(
-          "❌ Channel not found by email. Searching in DB for all emails:",
-        );
-        const allChannels = await Channel.find({}, "contactemail");
-        console.log(
-          "Available emails in DB:",
-          allChannels.map((c) => c.contactemail),
-        );
-      }
-    }
-
-    if (!channel) {
-      console.log("❌ Channel not found");
-      return res
-        .status(404)
-        .json({ success: false, message: "Channel not found" });
-    }
-    console.log("✅ Channel found:", channel._id);
-    res.status(200).json({ success: true, channel });
-  } catch (error) {
-    console.error("❌ Error in getChannelById:", error);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-};
-
 const getvideosByChannel = async (req, res) => {
   try {
-    const { channelId } = req.params;
-    // ✅ Populate creator field to get user details (userId ke saath user ka pura data)
-    const videos = await Video.find({ channel: channelId }).populate(
-      "creator",
-      "_id name email",
-    );
-    res.status(200).json({ success: true, videos });
+    console.log("───────────────────────────────");
+    console.log("URL hit:", req.originalUrl);
+    console.log("req.params:", req.params);
+    console.log("───────────────────────────────");
+
+    // ✅ FIXED
+    const channelId = req.params.id;
+
+    // Channel ID check
+    if (!channelId) {
+      return res.status(400).json({
+        success: false,
+        message: "Channel ID is required in URL",
+      });
+    }
+
+    // Mongo ObjectId validation
+    if (!mongoose.Types.ObjectId.isValid(channelId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Channel ID format",
+      });
+    }
+
+    // Find videos by channel
+    const videos = await Video.find({ channel: channelId })
+      .populate("uploadedBy", "_id name email")
+      .populate({
+        path: "channel",
+        select: "name channelImage channelBanner channeldescription category",
+      })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    console.log(`Videos found: ${videos.length}`);
+
+    return res.status(200).json({
+      success: true,
+      count: videos.length,
+      videos,
+    });
+
   } catch (error) {
     console.error("Error in getvideosByChannel:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching videos",
+    });
   }
 };
+
+// const getvideosByChannel = async (req, res) => {
+//   try {
+//     const { channelId } = req.params;
+
+//     if (!channelId) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Channel ID is required in the URL",
+//       });
+//     }
+
+//     // Optional: validate ObjectId
+//     if (!mongoose.Types.ObjectId.isValid(channelId)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid channel ID format",
+//       });
+//     }
+
+//     const videos = await Video.find({ channel: channelId })
+//       .populate("uploadedBy", "_id name email")
+//       .populate({
+//         path: "channel",
+//         select: "name channelImage channelBanner channeldescription category"
+//       })
+//       .sort({ createdAt: -1 })
+//       .lean();
+
+//     console.log("Videos for channel", channelId, ":", videos.length);
+
+//     res.status(200).json({
+//       success: true,
+//       count: videos.length,
+//       videos,
+//     });
+//   } catch (error) {
+//     console.error("Error in getvideosByChannel:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Server error",
+//       error: error.message,
+//     });
+//   }
+// };
 
 const deleteChannel = async (req, res) => {
   try {
@@ -384,7 +448,8 @@ const deleteChannel = async (req, res) => {
 
 const getAllVideos = async (req, res) => {
   try {
-    const videos = await Video.find({});
+    const videos = await Video.find().populate("channel", "name channelImage")
+  .populate("uploadedBy", "name email");;
     res.status(200).json({ success: true, videos });
   } catch (error) {
     console.error("Error in getAllVideos:", error);
