@@ -181,7 +181,7 @@ router.post("/auth/google", async (req, res) => {
 
 router.get("/profile", authMiddleware, async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     const user = await User.findById(userId)
       .select("_id name email")

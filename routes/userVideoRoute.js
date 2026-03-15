@@ -50,7 +50,7 @@ router.post(
   ]),
   uploadVideo
 );
-router.get("/channel",isAuthenticated, getChannels);
+router.get("/channels",isAuthenticated, getChannels);
 router.get("/channel/:id",isAuthenticated, getChannelById);
 router.get("/channel/:id/videos",isAuthenticated, getvideosByChannel);
 router.delete("/channel/:id", deleteChannel);
