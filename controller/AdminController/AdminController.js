@@ -68,19 +68,42 @@ exports.registerUser = async (req, res) => {
 
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await AllUser.find().select("-password");
-    res.status(200).json({
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 15;
+    const skip = (page - 1) * limit;
+
+    const users = await AllUser.find()
+      .select("name email role avatar trustScore rewardPoints createdAt")
+      .populate({
+        path: "channels",
+        select: "name channelImage createdAt",
+        populate: {
+          path: "videos",
+          select: "title thumbnail likesCount createdAt",
+          options: { limit: 4, sort: { createdAt: -1 } } // latest 4 videos per channel
+        }
+      })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const total = await AllUser.countDocuments();
+
+    res.json({
       success: true,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
       data: users,
     });
-  } catch (error) {
-    console.error("Get all users error:", error);
-    res.status(500).json({  
-      success: false,
-      message: "Server error",
-    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 };
+
 exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;

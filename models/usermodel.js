@@ -78,7 +78,6 @@
 
 // module.exports = mongoose.model("User", userSchema);
 
-
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
@@ -88,6 +87,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "Name is required"],
       trim: true,
+    },
+
+    avatar: {
+      type: String,
+      default: null, // or a default avatar URL
     },
 
     email: {
@@ -118,7 +122,19 @@ const userSchema = new mongoose.Schema(
     },
 
     googleId: String,
-    avatar: String,
+
+    // In your userSchema
+    avatar: {
+      type: String, // URL ke liye
+      default: null,
+    },
+
+    avatarFileId: {
+      // ← Naya field add karo (ye bahut zaroori hai delete ke liye)
+      type: String,
+      default: null,
+      select: false, // sensitive nahi hai lekin phir bhi
+    },
 
     trustScore: {
       type: Number,
@@ -156,7 +172,7 @@ const userSchema = new mongoose.Schema(
       min: 0,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 userSchema.methods.comparePassword = async function (candidatePassword) {

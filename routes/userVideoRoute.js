@@ -17,6 +17,7 @@ const {
   getChannels,
   createChannelByUploadVideo,
   createChannel,
+  subscribeChannel,
   uploadVideo,
 } = require("../controller/userVideoController");
 const { imageUpload } = require("../middlewares/multer");
@@ -50,12 +51,16 @@ router.post(
   ]),
   uploadVideo
 );
-router.get("/channels",isAuthenticated, getChannels);
+router.get("/channel",isAuthenticated, getChannels);
 router.get("/channel/:id",isAuthenticated, getChannelById);
 router.get("/channel/:id/videos",isAuthenticated, getvideosByChannel);
 router.delete("/channel/:id", deleteChannel);
 
 router.get("/",isAuthenticated, getAllVideos);
+
+
+router.post('/subscribe/:channelId', isAuthenticated, subscribeChannel);
+
 router.get("/:id",isAuthenticated, getVideoById);
 router.post("/:videoId/view", addView);
 router.post("/:videoId/like", likeVideo);

@@ -178,6 +178,8 @@
 //     });
 //   }
 // };
+
+
 const Video = require("../models/Videomodel");
 const Channel = require("../models/Channel/ChannelModel");
 const mongoose = require("mongoose");
@@ -301,7 +303,7 @@ const createChannel = async (req, res) => {
 const uploadVideo = async (req, res) => {
   try {
     const { channelId } = req.params;
-    const { name, description, category } = req.body;
+    const { name, description, category,videoType } = req.body;
 
     const channel = await ChannelModel.findById(channelId);
     if (!channel) {
@@ -333,6 +335,7 @@ const uploadVideo = async (req, res) => {
       description,
       videoUrl: videoPath,
       thumbnail: thumbnailPath,
+      videoType:videoType,
       uploadedBy: req.user?.userId,
     });
 
@@ -400,83 +403,7 @@ const getChannels = async (req, res) => {
   }
 };
 
-// const getChannels = async (req, res) => {
-//   try {
-//     const channels = await Channel.find({ user: req.user.id })
-//       .populate("category", "_id name")
-//       .populate("owner"); 
 
-//     return res.status(200).json({
-//       success: true,
-//       count: channels.length,
-//       channels,
-//     });
-
-//   } catch (error) {
-//     console.error("Error in getChannels:", error.message);
-//     return res.status(500).json({
-//       success: false,
-//       message: "Server error",
-//     });
-//   }
-// };
-// const getChannelById = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     console.log("📍 getChannelById called with id:", id);
-
-//     let channel = null;
-
-//     // Try to find by ObjectId first, then by email
-//     if (mongoose.Types.ObjectId.isValid(id)) {
-//       console.log("✅ ID is valid ObjectId, searching by ID...");
-//       channel = await Channel.findById(id);
-//     } else {
-//       console.log(
-//         "📧 ID is email, searching by email (case-insensitive):",
-//         id.toLowerCase(),
-//       );
-//       channel = await Channel.findOne({ contactemail: id.toLowerCase() });
-//       if (!channel) {
-//         console.log(
-//           "❌ Channel not found by email. Searching in DB for all emails:",
-//         );
-//         const allChannels = await Channel.find({}, "contactemail");
-//         console.log(
-//           "Available emails in DB:",
-//           allChannels.map((c) => c.contactemail),
-//         );
-//       }
-//     }
-
-//     if (!channel) {
-//       console.log("❌ Channel not found");
-//       return res
-//         .status(404)
-//         .json({ success: false, message: "Channel not found" });
-//     }
-//     console.log("✅ Channel found:", channel._id);
-//     res.status(200).json({ success: true, channel });
-//   } catch (error) {
-//     console.error("❌ Error in getChannelById:", error);
-//     res.status(500).json({ success: false, message: "Server error" });
-//   }
-// };
-
-// const getvideosByChannel = async (req, res) => {
-//   try {
-//     const { channelId } = req.params;
-//     // ✅ Populate creator field to get user details (userId ke saath user ka pura data)
-//     const videos = await Video.find({ channel: channelId }).populate(
-//       "creator",
-//       "_id name email",
-//     );
-//     res.status(200).json({ success: true, videos });
-//   } catch (error) {
-//     console.error("Error in getvideosByChannel:", error);
-//     res.status(500).json({ success: false, message: "Server error" });
-//   }
-// };
 
 
 // GET /api/channels/:id
@@ -579,50 +506,6 @@ const getvideosByChannel = async (req, res) => {
   }
 };
 
-// const getvideosByChannel = async (req, res) => {
-//   try {
-//     const { channelId } = req.params;
-
-//     if (!channelId) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Channel ID is required in the URL",
-//       });
-//     }
-
-//     // Optional: validate ObjectId
-//     if (!mongoose.Types.ObjectId.isValid(channelId)) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Invalid channel ID format",
-//       });
-//     }
-
-//     const videos = await Video.find({ channel: channelId })
-//       .populate("uploadedBy", "_id name email")
-//       .populate({
-//         path: "channel",
-//         select: "name channelImage channelBanner channeldescription category"
-//       })
-//       .sort({ createdAt: -1 })
-//       .lean();
-
-//     console.log("Videos for channel", channelId, ":", videos.length);
-
-//     res.status(200).json({
-//       success: true,
-//       count: videos.length,
-//       videos,
-//     });
-//   } catch (error) {
-//     console.error("Error in getvideosByChannel:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Server error",
-//       error: error.message,
-//     });
-//   }
-// };
 
 const deleteChannel = async (req, res) => {
   try {
@@ -927,6 +810,52 @@ const getVideoInteraction = async (req, res) => {
   }
 };
 
+
+
+const subscribeChannel = async (req, res) => {
+  try {
+    const { channelId } = req.params;
+    const userId = req.user.id;
+
+    const channel = await Channel.findById(channelId);
+    if (!channel) {
+      return res.status(404).json({ success: false, message: "Channel not found" });
+    }
+
+    // Agar already subscribed hai to unsubscribe kar do (toggle)
+    const isSubscribed = channel.subscribedBy.includes(userId);
+
+    if (isSubscribed) {
+      // Unsubscribe
+      await Channel.findByIdAndUpdate(channelId, {
+        $pull: { subscribedBy: userId },
+        $inc: { subscribers: -1 }
+      });
+
+      await User.findByIdAndUpdate(userId, {
+        $pull: { subscribedChannels: channelId }
+      });
+
+      return res.json({ success: true, message: "Unsubscribed successfully", subscribed: false });
+    } else {
+      // Subscribe
+      await Channel.findByIdAndUpdate(channelId, {
+        $addToSet: { subscribedBy: userId },
+        $inc: { subscribers: 1 }
+      });
+
+      await User.findByIdAndUpdate(userId, {
+        $addToSet: { subscribedChannels: channelId }
+      });
+
+      return res.json({ success: true, message: "Subscribed successfully", subscribed: true });
+    }
+  } catch (error) {
+    console.error("Subscribe error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 module.exports = {
   getAllVideos,
   getVideoById,
@@ -945,4 +874,5 @@ module.exports = {
   uploadVideo,
   recommendedVideos,
   trendingVideos,
+  subscribeChannel
 };

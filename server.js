@@ -5,6 +5,7 @@ require("dotenv").config(); // ✅ MUST BE FIRST LINE
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+const fileUpload = require("express-fileupload");
 const path = require("node:path");
 const mongoose = require("mongoose");
 const morgan = require("morgan");

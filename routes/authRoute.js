@@ -106,9 +106,7 @@
 //   }
 // });
 
-
 // module.exports = router;
-
 
 const express = require("express");
 const router = express.Router();
@@ -117,15 +115,23 @@ const { OAuth2Client } = require("google-auth-library");
 
 const User = require("../models/usermodel");
 const authMiddleware = require("../middlewares/isAuthenticated");
-const { registerUser, loginUser } = require("../controller/authController");
-const { getAllUsers } = require("../controller/AdminController/AdminController");
+const {
+  registerUser,
+  loginUser,
+  UserEdit,
+  updatePassword,
+  getMyProfile,
+} = require("../controller/authController");
+const {
+  getAllUsers,
+} = require("../controller/AdminController/AdminController");
+const { imageUpload } = require("../middlewares/multer");
 
 const GOOGLE_CLIENT_ID =
   process.env.GOOGLE_CLIENT_ID ||
   "1043684646784-d9igjhng2cfdp006ogsi0am1i3d4djh1.apps.googleusercontent.com";
 
 const client = new OAuth2Client(GOOGLE_CLIENT_ID);
-
 
 router.post("/register", registerUser);
 router.post("/login", loginUser);
@@ -157,11 +163,9 @@ router.post("/auth/google", async (req, res) => {
       });
     }
 
-    const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
 
     return res.status(200).json({
       success: true,
@@ -178,37 +182,73 @@ router.post("/auth/google", async (req, res) => {
     return res.status(401).json({ message: "Invalid Google token" });
   }
 });
-
 router.get("/profile", authMiddleware, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.id;   // ya req.user._id  (jo bhi aapke authMiddleware mein hai)
 
     const user = await User.findById(userId)
-      .select("_id name email")
+      .select("_id name email avatar")   // ← Avatar add kiya
       .lean();
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
     }
 
-    // Authorization header se token
+    // Optional: Token return karna hai toh yeh rakh sakte ho (mostly not needed)
     const token = req.headers.authorization?.split(" ")[1];
 
     return res.status(200).json({
       success: true,
-      token: token,
+      token: token || null,           // agar zarurat nahi toh hata sakte ho
       user: {
-        id: user._id,
+        _id: user._id,
         name: user.name,
         email: user.email,
+        avatar: user.avatar || null,   // ← Ye important hai
       },
     });
   } catch (error) {
     console.error("Profile Error:", error);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching profile",
+    });
   }
 });
-router.get("/alluser",getAllUsers)
+// router.get("/profile", authMiddleware, async (req, res) => {
+//   try {
+//     const userId = req.user.id;
 
+//     const user = await User.findById(userId).select("_id name email").lean();
+
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     // Authorization header se token
+//     const token = req.headers.authorization?.split(" ")[1];
+
+//     return res.status(200).json({
+//       success: true,
+//       token: token,
+//       user: {
+//         id: user._id,
+//         name: user.name,
+//         email: user.email,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Profile Error:", error);
+//     return res.status(500).json({ message: "Server error" });
+//   }
+// });
+router.get("/alluser", getAllUsers);
+
+router.put("/user/:id", imageUpload.single("avatar"), UserEdit);
+router.put("/user/password/:id", updatePassword);
+router.get("/me", authMiddleware, getMyProfile);
 
 module.exports = router;

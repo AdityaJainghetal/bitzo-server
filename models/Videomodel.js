@@ -17,7 +17,10 @@ const videoSchema = new mongoose.Schema(
       required: true,
     },
 
-    
+   videoType: [{
+  type: String,
+  enum: ["short", "long"],
+}], 
 
     uploadedBy: {
       type: mongoose.Schema.Types.ObjectId,
